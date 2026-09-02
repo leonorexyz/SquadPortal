@@ -1,0 +1,1 @@
+CREATE INDEX `stories_visibility_date_idx` ON `stories` (`visibility`,`story_date`);

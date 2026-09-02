@@ -1,0 +1,1 @@
+ALTER TABLE `stories` ADD `visibility` text DEFAULT 'private' NOT NULL;
