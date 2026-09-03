@@ -23,6 +23,15 @@ export const auth = betterAuth({
     schema,
     usePlural: true,
   }),
+  account: {
+    accountLinking: {
+      enabled: true,
+      // Workspace admins pre-provision members before their first Google login.
+      // Google verifies ownership of the matching email during OAuth.
+      trustedProviders: ["google"],
+      requireLocalEmailVerified: false,
+    },
+  },
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
