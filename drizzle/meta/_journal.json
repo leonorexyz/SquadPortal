@@ -71,6 +71,13 @@
       "when": 1788464408491,
       "tag": "0009_project_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788465200000,
+      "tag": "0010_project_fixtures",
+      "breakpoints": true
     }
   ]
 }

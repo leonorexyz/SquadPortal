@@ -44,8 +44,12 @@ export async function createProject(input: ProjectInput) {
 export async function updateProject(projectId: string, input: ProjectUpdate) {
   const current = await db.select().from(projects).where(eq(projects.id, projectId)).get();
   if (!current) return null;
-  await db.update(projects).set(input).where(eq(projects.id, projectId)).run();
-  return mapProject({ ...current, ...input });
+  const update = {
+    ...input,
+    ...(input.client !== undefined ? { client: input.client?.trim() || null } : {}),
+  };
+  await db.update(projects).set(update).where(eq(projects.id, projectId)).run();
+  return mapProject({ ...current, ...update });
 }
 
 export async function deleteProject(projectId: string) {

@@ -28,9 +28,9 @@ import {
   X,
 } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PortalNavigation, { PortalSettingsLink, portalHref } from "../../components/PortalNavigation";
-import PortalUserProfile, { PortalUserAvatar } from "../../components/PortalUserProfile";
+import PortalUserProfile, { PortalUserAvatar, usePortalUser } from "../../components/PortalUserProfile";
 
 type ProjectTask = {
   title: string;
@@ -70,11 +70,88 @@ type ProjectDetail = {
   tasks: ProjectTask[];
 };
 
+type ApiProject = {
+  id: string;
+  name: string;
+  description: string;
+  client: string | null;
+  status: "preparation" | "development" | "sit" | "uat" | "go-live" | "support" | "implementation";
+  visibility: "internal" | "public";
+  dueDate: string | null;
+  ownerId: string;
+  createdAt: string;
+};
+
 const projectResources: ProjectResource[] = [
   { name: "Project brief", type: "Knowledge base", description: "Scope, decisions, and shared context", href: "/knowledge", color: "purple" },
   { name: "Delivery checklist", type: "Google Sheets", description: "Milestones, owners, and launch checks", href: "/integrations", color: "green" },
   { name: "Handoff notes", type: "Project file", description: "Latest files and implementation notes", href: "/knowledge", color: "blue" },
 ];
+
+const projectColors = ["purple", "green", "orange", "blue", "pink"];
+const displayStatusMap: Record<ApiProject["status"], ProjectStatus> = {
+  preparation: "Preparation",
+  development: "Development",
+  sit: "SIT",
+  uat: "UAT",
+  "go-live": "Go-live",
+  support: "Support",
+  implementation: "Implementation",
+};
+
+function displayStatus(status: ApiProject["status"]): ProjectStatus {
+  return displayStatusMap[status];
+}
+
+function displayVisibility(visibility: ApiProject["visibility"]): ProjectDetail["visibility"] {
+  return visibility === "public" ? "Public" : "Internal";
+}
+
+function formatDate(dateValue: string, options: Intl.DateTimeFormatOptions) {
+  const date = new Date(dateValue);
+  return Number.isNaN(date.getTime()) ? dateValue : date.toLocaleDateString("en-US", options);
+}
+
+async function responseError(response: Response) {
+  try { const body = await response.json() as { error?: string }; return body.error ?? `Request failed (${response.status})`; } catch { return `Request failed (${response.status})`; }
+}
+
+function mapApiProjectDetail(apiProject: ApiProject, baseProject: ProjectDetail | undefined, currentUser: { id: string; name: string }, colorIndex: number): ProjectDetail {
+  const status = displayStatus(apiProject.status);
+  const owner = baseProject?.owner ?? (apiProject.ownerId === currentUser.id ? currentUser.name : apiProject.ownerId);
+  const initials = owner.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  const fallback: ProjectDetail = baseProject ?? {
+    name: apiProject.name,
+    description: apiProject.description,
+    client: apiProject.client,
+    status,
+    statusClass: status.toLowerCase().replace(/\s+/g, "-"),
+    visibility: displayVisibility(apiProject.visibility),
+    owner,
+    initials,
+    completedTasks: 0,
+    totalTasks: 0,
+    due: null,
+    startDate: formatDate(apiProject.createdAt, { month: "long", day: "numeric", year: "numeric" }),
+    color: projectColors[colorIndex % projectColors.length],
+    members: [initials],
+    resources: projectResources,
+    milestones: [],
+    tasks: [],
+  };
+  return {
+    ...fallback,
+    name: apiProject.name,
+    description: apiProject.description,
+    client: apiProject.client,
+    status,
+    statusClass: status.toLowerCase().replace(/\s+/g, "-"),
+    visibility: displayVisibility(apiProject.visibility),
+    owner,
+    initials,
+    due: apiProject.dueDate ? formatDate(`${apiProject.dueDate}T00:00:00`, { month: "long", day: "numeric", year: "numeric" }) : null,
+  };
+}
 
 const projectDetails: Record<string, ProjectDetail> = {
   "website-redesign": {
@@ -262,8 +339,9 @@ const navigation = [
 
 export default function ProjectDetailPage() {
   const params = useParams<{ projectId: string }>();
+  const initialProject = projectDetails[params.projectId] ?? fallbackProject;
+  const [project, setProject] = useState(initialProject);
   const [activeTab, setActiveTab] = useState("Overview");
-  const project = projectDetails[params.projectId] ?? fallbackProject;
   const [tasks, setTasks] = useState(project.tasks);
   const [taskForm, setTaskForm] = useState<TaskFormState>(emptyTaskForm);
   const [editingTaskTitle, setEditingTaskTitle] = useState<string | null>(null);
@@ -273,6 +351,38 @@ export default function ProjectDetailPage() {
   const [projectVisibility, setProjectVisibility] = useState<ProjectDetail["visibility"]>(project.visibility);
   const [shareCopied, setShareCopied] = useState(false);
   const [syncNotice, setSyncNotice] = useState("");
+  const [projectError, setProjectError] = useState("");
+  const currentUser = usePortalUser();
+  const isMockAuth = process.env.NEXT_PUBLIC_AUTH_MOCK !== "false";
+  const requestUserId = isMockAuth ? "demo-user" : currentUser.id;
+
+  useEffect(() => {
+    if (!isMockAuth && currentUser.id === "workspace-member") return;
+    const controller = new AbortController();
+    const staticProject = projectDetails[params.projectId];
+    if (staticProject) {
+      setProject(staticProject);
+      setTasks(staticProject.tasks);
+      setProjectVisibility(staticProject.visibility);
+    }
+    setProjectError("");
+    void fetch(`/api/projects/${params.projectId}`, { signal: controller.signal, cache: "no-store", headers: { Accept: "application/json", "x-user-id": requestUserId } })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(await responseError(response));
+        return await response.json() as ApiProject;
+      })
+      .then((apiProject) => {
+        const nextProject = mapApiProjectDetail(apiProject, staticProject, currentUser, 0);
+        setProject(nextProject);
+        setTasks(nextProject.tasks);
+        setProjectVisibility(nextProject.visibility);
+      })
+      .catch((error) => {
+        if (error instanceof Error && error.name === "AbortError") return;
+        setProjectError(error instanceof Error ? error.message : "Unable to load project");
+      });
+    return () => controller.abort();
+  }, [currentUser.id, currentUser.name, isMockAuth, params.projectId, requestUserId]);
 
   const visibleTasks = tasks.filter((task) => taskFilter === "All tasks" || task.status === taskFilter);
 
@@ -337,6 +447,7 @@ export default function ProjectDetailPage() {
   return <div className="dashboard-shell">
      <aside className="sidebar" aria-label="Main navigation"><ProjectBrand /> <PortalNavigation /><div className="sidebar-bottom"><PortalSettingsLink /><PortalUserProfile roleLabel="Product lead" /></div></aside>
      <main className="main-content project-detail-page"><div className="mobile-header"><ProjectBrand /><PortalUserAvatar className="avatar-header" /></div>
+      {projectError && <p className="field-error" role="alert">{projectError}</p>}
       <header className="main-header detail-header"><div><p className="breadcrumb"><Link href="/projects"><ArrowLeft size={13} /> Projects</Link> <span>/</span> {project.name}</p><div className="detail-title-row"><h1 className="page-title">{project.name}</h1><span className={`project-status ${project.statusClass}`}>{project.status}</span></div><p className="page-subtitle">{project.description}</p></div><div className="detail-header-actions"><button className="secondary-button" type="button" onClick={copyShareLink}><Share2 size={14} /> {shareCopied ? "Link copied" : "Share"}</button><button className="secondary-button" type="button"><Pencil size={14} /> Edit project</button><button className="task-menu detail-menu" type="button" aria-label="More project options"><MoreHorizontal size={18} /></button></div></header>
       <section className="project-detail-hero"><div className="detail-facts"><div><span>Project owner</span><strong><span className={`avatar avatar-tiny ${project.color}`}>{project.initials}</span>{project.owner}</strong></div><div><span>Client</span><strong>{project.client ?? "No client"}</strong></div><div><span>Due date</span><strong><CalendarDays size={14} /> {project.due ?? "No due date"}</strong></div><div><span>Visibility</span><strong><CircleDot size={13} /> {projectVisibility}</strong></div></div></section>
       <nav className="detail-tabs" aria-label="Project sections">{["Overview", "Tasks", "Activity"].map((tab) => <button className={activeTab === tab ? "active" : ""} key={tab} type="button" onClick={() => setActiveTab(tab)}>{tab}{tab === "Tasks" && <span>{project.totalTasks}</span>}</button>)}</nav>
