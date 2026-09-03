@@ -18,6 +18,7 @@ import {
   Pencil,
   Plus,
   Download,
+  ExternalLink,
   Settings2,
   Share2,
   Ticket,
@@ -39,41 +40,59 @@ type ProjectTask = {
   due: string;
 };
 
+type ProjectStatus = "Preparation" | "Development" | "SIT" | "UAT" | "Go-live" | "Support" | "Implementation";
+
+type ProjectResource = {
+  name: string;
+  type: "Knowledge base" | "Google Sheets" | "Project file";
+  description: string;
+  href: string;
+  color: string;
+};
+
 type ProjectDetail = {
   name: string;
   description: string;
-  status: "Ongoing" | "In review" | "On hold" | "Completed";
+  client: string | null;
+  status: ProjectStatus;
   statusClass: string;
   visibility: "Internal" | "Public";
   owner: string;
   initials: string;
-  progress: number;
   completedTasks: number;
   totalTasks: number;
-  due: string;
+  due: string | null;
   startDate: string;
   color: string;
   members: string[];
+  resources: ProjectResource[];
   milestones: { label: string; date: string; complete: boolean }[];
   tasks: ProjectTask[];
 };
+
+const projectResources: ProjectResource[] = [
+  { name: "Project brief", type: "Knowledge base", description: "Scope, decisions, and shared context", href: "/knowledge", color: "purple" },
+  { name: "Delivery checklist", type: "Google Sheets", description: "Milestones, owners, and launch checks", href: "/integrations", color: "green" },
+  { name: "Handoff notes", type: "Project file", description: "Latest files and implementation notes", href: "/knowledge", color: "blue" },
+];
 
 const projectDetails: Record<string, ProjectDetail> = {
   "website-redesign": {
     name: "Website Redesign",
     description: "A clearer, calmer home for the product and the people using it.",
-    status: "Ongoing",
-    statusClass: "ongoing",
+    client: "Nexa Labs",
+    status: "Development",
+    statusClass: "development",
     visibility: "Internal",
     owner: "Nadia Putri",
     initials: "NP",
-    progress: 72,
     completedTasks: 13,
     totalTasks: 18,
     due: "September 12, 2026",
     startDate: "August 04, 2026",
     color: "purple",
     members: ["NP", "RA", "SM", "SA"],
+    resources: projectResources,
     milestones: [
       { label: "Project direction", date: "Aug 08", complete: true },
       { label: "Design exploration", date: "Aug 23", complete: true },
@@ -90,18 +109,19 @@ const projectDetails: Record<string, ProjectDetail> = {
   "mobile-app": {
     name: "Mobile App v2",
     description: "Reworking the core mobile workflow around faster everyday decisions.",
-    status: "In review",
-    statusClass: "review",
+    client: "IFabula",
+    status: "SIT",
+    statusClass: "sit",
     visibility: "Internal",
     owner: "Raka Aditya",
     initials: "RA",
-    progress: 88,
     completedTasks: 21,
     totalTasks: 24,
     due: "September 05, 2026",
     startDate: "July 15, 2026",
     color: "green",
     members: ["RA", "NP", "DP"],
+    resources: projectResources,
     milestones: [
       { label: "User flows", date: "Jul 24", complete: true },
       { label: "Beta build", date: "Aug 14", complete: true },
@@ -110,6 +130,111 @@ const projectDetails: Record<string, ProjectDetail> = {
     tasks: [
       { title: "Resolve final beta feedback", status: "In progress", assignee: "Raka Aditya", initials: "RA", due: "Aug 29" },
       { title: "Update release notes", status: "To do", assignee: "Nadia Putri", initials: "NP", due: "Sep 03" },
+    ],
+  },
+  "q3-campaign": {
+    name: "Q3 Campaign",
+    description: "A focused campaign to help more teams discover the new workspace.",
+    client: null,
+    status: "UAT",
+    statusClass: "uat",
+    visibility: "Public",
+    owner: "Dimas Pratama",
+    initials: "DP",
+    completedTasks: 6,
+    totalTasks: 13,
+    due: "September 27, 2026",
+    startDate: "August 12, 2026",
+    color: "orange",
+    members: ["DP", "SM", "NP"],
+    resources: projectResources,
+    milestones: [
+      { label: "Campaign brief", date: "Aug 15", complete: true },
+      { label: "Creative review", date: "Sep 08", complete: true },
+      { label: "User acceptance", date: "Sep 20", complete: false },
+      { label: "Launch", date: "Sep 27", complete: false },
+    ],
+    tasks: [
+      { title: "Review campaign landing page", status: "In progress", assignee: "Dimas Pratama", initials: "DP", due: "Sep 18" },
+      { title: "Confirm audience segments", status: "To do", assignee: "Sinta Maheswari", initials: "SM", due: "Sep 21" },
+    ],
+  },
+  "team-ops": {
+    name: "Team Operations",
+    description: "Small systems that make planning, handoffs, and collaboration easier.",
+    client: "Leonore Kingdom",
+    status: "Implementation",
+    statusClass: "implementation",
+    visibility: "Internal",
+    owner: "Sarah Anderson",
+    initials: "SA",
+    completedTasks: 10,
+    totalTasks: 16,
+    due: "September 19, 2026",
+    startDate: "August 01, 2026",
+    color: "blue",
+    members: ["SA", "NP", "RA"],
+    resources: projectResources,
+    milestones: [
+      { label: "Process audit", date: "Aug 06", complete: true },
+      { label: "Operating model", date: "Aug 22", complete: true },
+      { label: "Team rollout", date: "Sep 12", complete: false },
+    ],
+    tasks: [
+      { title: "Publish weekly planning template", status: "Done", assignee: "Sarah Anderson", initials: "SA", due: "Sep 04" },
+      { title: "Run the first team handoff", status: "In progress", assignee: "Nadia Putri", initials: "NP", due: "Sep 15" },
+    ],
+  },
+  "research-library": {
+    name: "Research Library",
+    description: "Organizing the insights that help us make better product decisions.",
+    client: "Northstar",
+    status: "Go-live",
+    statusClass: "go-live",
+    visibility: "Public",
+    owner: "Sinta Maheswari",
+    initials: "SM",
+    completedTasks: 11,
+    totalTasks: 11,
+    due: null,
+    startDate: "July 21, 2026",
+    color: "purple",
+    members: ["SM", "NP"],
+    resources: projectResources,
+    milestones: [
+      { label: "Taxonomy review", date: "Jul 27", complete: true },
+      { label: "Content migration", date: "Aug 12", complete: true },
+      { label: "Go-live", date: "Aug 21", complete: true },
+    ],
+    tasks: [
+      { title: "Archive duplicate research notes", status: "Done", assignee: "Sinta Maheswari", initials: "SM", due: "Aug 18" },
+      { title: "Share the library with the team", status: "Done", assignee: "Nadia Putri", initials: "NP", due: "Aug 21" },
+    ],
+  },
+  "onboarding-refresh": {
+    name: "Onboarding refresh",
+    description: "A welcoming first week for every new member joining the squad.",
+    client: "Leonore Kingdom",
+    status: "Preparation",
+    statusClass: "preparation",
+    visibility: "Internal",
+    owner: "Sarah Anderson",
+    initials: "SA",
+    completedTasks: 3,
+    totalTasks: 9,
+    due: "October 02, 2026",
+    startDate: "September 01, 2026",
+    color: "pink",
+    members: ["SA", "RA", "SM"],
+    resources: projectResources,
+    milestones: [
+      { label: "Onboarding audit", date: "Sep 05", complete: true },
+      { label: "New starter kit", date: "Sep 19", complete: false },
+      { label: "Team rollout", date: "Oct 02", complete: false },
+    ],
+    tasks: [
+      { title: "Map the first-week journey", status: "In progress", assignee: "Sarah Anderson", initials: "SA", due: "Sep 14" },
+      { title: "Prepare welcome resources", status: "To do", assignee: "Raka Aditya", initials: "RA", due: "Sep 22" },
     ],
   },
 };
@@ -213,9 +338,10 @@ export default function ProjectDetailPage() {
      <aside className="sidebar" aria-label="Main navigation"><ProjectBrand /> <PortalNavigation /><div className="sidebar-bottom"><PortalSettingsLink /><PortalUserProfile roleLabel="Product lead" /></div></aside>
      <main className="main-content project-detail-page"><div className="mobile-header"><ProjectBrand /><PortalUserAvatar className="avatar-header" /></div>
       <header className="main-header detail-header"><div><p className="breadcrumb"><Link href="/projects"><ArrowLeft size={13} /> Projects</Link> <span>/</span> {project.name}</p><div className="detail-title-row"><h1 className="page-title">{project.name}</h1><span className={`project-status ${project.statusClass}`}>{project.status}</span></div><p className="page-subtitle">{project.description}</p></div><div className="detail-header-actions"><button className="secondary-button" type="button" onClick={copyShareLink}><Share2 size={14} /> {shareCopied ? "Link copied" : "Share"}</button><button className="secondary-button" type="button"><Pencil size={14} /> Edit project</button><button className="task-menu detail-menu" type="button" aria-label="More project options"><MoreHorizontal size={18} /></button></div></header>
-      <section className="project-detail-hero"><div className="detail-progress-block"><div className="detail-progress-heading"><div><span className="project-summary-label">Project progress</span><strong>{project.progress}%</strong></div><span>{project.completedTasks} of {project.totalTasks} tasks complete</span></div><div className={`project-progress detail-progress ${project.color}`}><span style={{ width: `${project.progress}%` }} /></div></div><div className="detail-facts"><div><span>Project owner</span><strong><span className={`avatar avatar-tiny ${project.color}`}>{project.initials}</span>{project.owner}</strong></div><div><span>Due date</span><strong><CalendarDays size={14} /> {project.due}</strong></div><div><span>Visibility</span><strong><CircleDot size={13} /> {projectVisibility}</strong></div></div></section>
+      <section className="project-detail-hero"><div className="detail-facts"><div><span>Project owner</span><strong><span className={`avatar avatar-tiny ${project.color}`}>{project.initials}</span>{project.owner}</strong></div><div><span>Client</span><strong>{project.client ?? "No client"}</strong></div><div><span>Due date</span><strong><CalendarDays size={14} /> {project.due ?? "No due date"}</strong></div><div><span>Visibility</span><strong><CircleDot size={13} /> {projectVisibility}</strong></div></div></section>
       <nav className="detail-tabs" aria-label="Project sections">{["Overview", "Tasks", "Activity"].map((tab) => <button className={activeTab === tab ? "active" : ""} key={tab} type="button" onClick={() => setActiveTab(tab)}>{tab}{tab === "Tasks" && <span>{project.totalTasks}</span>}</button>)}</nav>
       {activeTab === "Overview" && <div className="project-detail-grid"><section className="detail-panel detail-tasks-panel"><div className="detail-panel-heading"><div><span className="eyebrow">Next up</span><h2>Project tasks</h2></div><button className="text-button" type="button" onClick={() => setActiveTab("Tasks")}>View all <ArrowLeft size={13} className="rotate-180" /></button></div><div className="detail-task-list">{tasks.map((task) => <ProjectTaskRow key={task.title} task={task} color={project.color} onEdit={() => openEditTask(task)} onDelete={() => setTaskToDelete(task)} onToggle={() => toggleTaskCompletion(task)} />)}</div></section><aside className="detail-side-stack"><section className="detail-panel"><div className="detail-panel-heading"><div><span className="eyebrow">Timeline</span><h2>Milestones</h2></div><Clock3 size={16} color="#a5adbc" /></div><div className="milestone-list">{project.milestones.map((milestone) => <div className="milestone" key={milestone.label}><span className={`milestone-dot ${milestone.complete ? "complete" : ""}`}>{milestone.complete && <Check size={11} />}</span><span><strong>{milestone.label}</strong><small>{milestone.date}</small></span></div>)}</div></section><section className="detail-panel"><div className="detail-panel-heading"><div><span className="eyebrow">People</span><h2>Project team</h2></div><Users size={16} color="#a5adbc" /></div><div className="detail-team">{project.members.map((member, index) => <span className={`avatar avatar-tiny ${index % 2 === 0 ? project.color : "green"}`} key={`${member}-${index}`}>{member}</span>)}<span className="team-count">{project.members.length} members</span></div><div className="project-date-row"><span>Started</span><strong>{project.startDate}</strong></div></section><section className="detail-panel access-panel"><div className="detail-panel-heading"><div><span className="eyebrow">Sharing</span><h2>Access settings</h2></div><Share2 size={16} color="#a5adbc" /></div><p className="access-description">Choose who can discover and view this project.</p><select className="select-control access-select" value={projectVisibility} onChange={(event) => setProjectVisibility(event.target.value as ProjectDetail["visibility"])} aria-label="Project visibility"><option>Internal</option><option>Public</option></select><div className="share-link-row"><input readOnly value={`https://squad.local/projects/${params.projectId}`} aria-label="Project share link" /><button className="task-menu" type="button" aria-label="Copy project share link" onClick={copyShareLink}>{shareCopied ? <Check size={14} /> : <Copy size={14} />}</button></div><small className="share-note">{shareCopied ? "Share link copied to clipboard." : "Anyone with a public link can view this project."}</small></section></aside></div>}
+      {activeTab === "Overview" && <section className="detail-panel project-resources-panel" aria-labelledby="project-resources-title"><div className="detail-panel-heading"><div><span className="eyebrow">Project library</span><h2 id="project-resources-title">Resources</h2></div><BookOpen size={16} color="#a5adbc" /></div><div className="project-resource-list">{project.resources.map((resource) => <Link className="project-resource" href={resource.href} key={resource.name}><span className={`resource-kind-icon ${resource.color}`}><BookOpen size={15} /></span><span><strong>{resource.name}</strong><small>{resource.type} · {resource.description}</small></span><ExternalLink size={14} /></Link>)}</div></section>}
       {activeTab === "Tasks" && <section className="detail-panel detail-tab-panel"><div className="detail-panel-heading"><div><span className="eyebrow">All work</span><h2>Tasks in {project.name}</h2></div><div className="detail-task-toolbar"><button className="secondary-button" type="button" onClick={simulateGoogleImport}><Upload size={13} /> Import Google</button><button className="secondary-button" type="button" onClick={simulateGoogleExport}><Download size={13} /> Export Google</button><select className="select-control" value={taskFilter} onChange={(event) => setTaskFilter(event.target.value)} aria-label="Filter tasks by status"><option>All tasks</option><option>To do</option><option>In progress</option><option>Done</option></select><button className="primary-button" type="button" onClick={openCreateTask}><Plus size={14} /> Add task</button></div></div>{syncNotice && <p className="sync-notice" role="status">{syncNotice}</p>}<div className="detail-task-list">{visibleTasks.map((task) => <ProjectTaskRow key={task.title} task={task} color={project.color} onEdit={() => openEditTask(task)} onDelete={() => setTaskToDelete(task)} onToggle={() => toggleTaskCompletion(task)} />)}{visibleTasks.length === 0 && <p className="empty-search">No tasks match this status.</p>}</div></section>}
       {activeTab === "Activity" && <section className="detail-panel detail-tab-panel"><div className="detail-panel-heading"><div><span className="eyebrow">Recent updates</span><h2>Project activity</h2></div></div><div className="detail-activity-list"><div><span className="avatar avatar-tiny purple">NP</span><p><strong>Nadia Putri</strong> moved “Project direction” to complete.<small>Today, 09:42</small></p></div><div><span className="avatar avatar-tiny green">RA</span><p><strong>Raka Aditya</strong> added a review note to the responsive layout.<small>Yesterday, 16:18</small></p></div><div><span className="avatar avatar-tiny orange">SM</span><p><strong>Sinta Maheswari</strong> joined the project team.<small>Aug 25, 11:05</small></p></div></div></section>}
       {isTaskFormOpen ? <TaskFormModal form={taskForm} editing={editingTaskTitle !== null} onChange={setTaskForm} onClose={closeTaskForm} onSubmit={handleTaskSubmit} /> : null}

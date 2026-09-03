@@ -1,8 +1,9 @@
-import { and, count, eq, gte, lte, ne, sql } from "drizzle-orm";
+import { and, count, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "../../../../db";
 import { projects, sessions, tasks, users } from "../../../../db/schema";
 import { dashboardSummaryResponseSchema } from "../../../../lib/dashboard/schema";
+import type { ProjectStatus } from "../../../../lib/projects/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ function countValue(result: { count: number } | undefined) {
 
 export async function GET() {
   try {
-    const activeProjects = countValue(await db.select({ count: count() }).from(projects).where(eq(projects.status, "ongoing")).get());
+    const activeProjects = countValue(await db.select({ count: count() }).from(projects).where(inArray(projects.status, ["preparation", "development", "sit", "uat", "go-live", "implementation"])).get());
     const totalProjects = countValue(await db.select({ count: count() }).from(projects).get());
     const completedTasks = countValue(await db.select({ count: count() }).from(tasks).where(eq(tasks.status, "done")).get());
     const pendingTasks = countValue(await db.select({ count: count() }).from(tasks).where(ne(tasks.status, "done")).get());
@@ -30,7 +31,7 @@ export async function GET() {
       projects: {
         active: activeProjects,
         total: totalProjects,
-      byStatus: Object.fromEntries(projectStatuses.map((row: { status: "ongoing" | "completed" | "onhold"; count: number }) => [row.status, Number(row.count)])),
+      byStatus: Object.fromEntries(projectStatuses.map((row: { status: ProjectStatus; count: number }) => [row.status, Number(row.count)])),
       },
       tasks: {
         completed: completedTasks,

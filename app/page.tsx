@@ -81,9 +81,9 @@ const productivity: ProductivityMember[] = [
 ];
 
 const projects: ProjectHealth[] = [
-  { name: "Website Redesign", status: "Ongoing", statusClass: "ongoing", progress: 72, color: "" },
-  { name: "Mobile App v2", status: "In review", statusClass: "review", progress: 88, color: "green" },
-  { name: "Q3 Campaign", status: "On hold", statusClass: "onhold", progress: 46, color: "orange" },
+  { name: "Website Redesign", status: "Development", statusClass: "development", progress: 72, color: "" },
+  { name: "Mobile App v2", status: "SIT", statusClass: "sit", progress: 88, color: "green" },
+  { name: "Q3 Campaign", status: "UAT", statusClass: "uat", progress: 46, color: "orange" },
 ];
 
 const activities: Activity[] = [

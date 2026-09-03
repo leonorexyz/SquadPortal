@@ -1,7 +1,7 @@
 import { and, desc, eq, like, or } from "drizzle-orm";
 import { db } from "../../db";
 import { projects, users } from "../../db/schema";
-import { type ProjectInput, type ProjectUpdate } from "./schema";
+import { type ProjectInput, type ProjectStatus, type ProjectUpdate } from "./schema";
 
 export const DEFAULT_PROJECT_OWNER_ID = "demo-user";
 
@@ -10,16 +10,16 @@ async function ensureDemoOwner(ownerId = DEFAULT_PROJECT_OWNER_ID) {
 }
 
 function mapProject(project: typeof projects.$inferSelect) {
-  return { id: project.id, name: project.name, description: project.description, status: project.status, visibility: project.visibility, dueDate: project.dueDate, ownerId: project.ownerId, createdAt: project.createdAt.toISOString() };
+  return { id: project.id, name: project.name, description: project.description, client: project.client, status: project.status, visibility: project.visibility, dueDate: project.dueDate, ownerId: project.ownerId, createdAt: project.createdAt.toISOString() };
 }
 
-export async function listProjects(options: { ownerId?: string; search?: string; status?: "ongoing" | "completed" | "onhold"; visibility?: "internal" | "public" } = {}) {
+export async function listProjects(options: { ownerId?: string; search?: string; status?: ProjectStatus; visibility?: "internal" | "public" } = {}) {
   if (options.ownerId) await ensureDemoOwner(options.ownerId);
   const filters = [];
   if (options.ownerId) filters.push(eq(projects.ownerId, options.ownerId));
   if (options.search) {
     const pattern = `%${options.search}%`;
-    filters.push(or(like(projects.name, pattern), like(projects.description, pattern)));
+    filters.push(or(like(projects.name, pattern), like(projects.description, pattern), like(projects.client, pattern)));
   }
   if (options.status) filters.push(eq(projects.status, options.status));
   if (options.visibility) filters.push(eq(projects.visibility, options.visibility));
@@ -36,7 +36,7 @@ export async function getProject(projectId: string) {
 export async function createProject(input: ProjectInput) {
   const ownerId = input.ownerId ?? DEFAULT_PROJECT_OWNER_ID;
   await ensureDemoOwner(ownerId);
-  const project = { id: `project-${crypto.randomUUID()}`, name: input.name, description: input.description, status: input.status, visibility: input.visibility, dueDate: input.dueDate ?? null, ownerId, createdAt: new Date() };
+  const project = { id: `project-${crypto.randomUUID()}`, name: input.name, description: input.description, client: input.client?.trim() || null, status: input.status, visibility: input.visibility, dueDate: input.dueDate ?? null, ownerId, createdAt: new Date() };
   await db.insert(projects).values(project).run();
   return mapProject(project);
 }

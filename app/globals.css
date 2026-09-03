@@ -6263,3 +6263,138 @@ body :is(.tasks-summary > div, .member-toolbar, .role-member-preview, .access-ov
 .toggle-track > span {
   background: #dbe7fa !important;
 }
+
+/* Project lifecycle and clickable project details */
+.project-card-content {
+  color: inherit;
+  display: block;
+  text-decoration: none;
+}
+
+.project-card-content:focus-visible {
+  border-radius: 8px;
+  outline: 2px solid var(--cyan);
+  outline-offset: 5px;
+}
+
+.project-card-content > p {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.65;
+  margin: 7px 0 0;
+  min-height: 36px;
+}
+
+.project-card-client {
+  color: var(--cyan) !important;
+  font-weight: 700;
+}
+
+.project-status.preparation {
+  background: rgba(155, 123, 255, 0.16) !important;
+  color: #c8bcff !important;
+}
+
+.project-status.development,
+.project-status.implementation {
+  background: var(--purple-soft) !important;
+  color: var(--purple-dark) !important;
+}
+
+.project-status.sit {
+  background: var(--cyan-soft) !important;
+  color: var(--cyan) !important;
+}
+
+.project-status.uat {
+  background: var(--orange-soft) !important;
+  color: var(--orange) !important;
+}
+
+.project-status.go-live,
+.project-status.support {
+  background: var(--green-soft) !important;
+  color: var(--green) !important;
+}
+
+.project-detail-hero {
+  background: linear-gradient(120deg, rgba(128, 93, 255, 0.12) 0%, var(--panel) 62%) !important;
+  border-color: var(--line) !important;
+  display: block;
+}
+
+.project-detail-hero .detail-facts {
+  border-left: 0;
+  display: grid;
+  gap: 16px 28px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding-left: 0;
+}
+
+.project-resources-panel {
+  margin-top: 20px;
+}
+
+.project-resource-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 17px;
+}
+
+.project-resource {
+  align-items: center;
+  background: rgba(13, 24, 40, 0.72);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--muted);
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  text-decoration: none;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.project-resource:hover {
+  background: rgba(80, 221, 255, 0.07);
+  border-color: rgba(80, 221, 255, 0.42);
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.project-resource > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.project-resource strong,
+.project-resource small {
+  display: block;
+}
+
+.project-resource strong {
+  color: var(--ink);
+  font-size: 10px;
+}
+
+.project-resource small {
+  color: var(--soft-muted);
+  font-size: 9px;
+  margin-top: 3px;
+}
+
+.project-resource > svg {
+  color: var(--cyan);
+  flex: 0 0 auto;
+}
+
+@media (max-width: 900px) {
+  .project-detail-hero .detail-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .project-detail-hero .detail-facts {
+    grid-template-columns: 1fr;
+  }
+}
