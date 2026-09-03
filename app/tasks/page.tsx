@@ -1,8 +1,9 @@
 "use client";
 
-import { CheckCircle2, ChevronDown, CircleDot, Clock3, Grid2X2, ListTodo, Search } from "lucide-react";
+import { CheckCircle2, CircleDot, Clock3, Grid2X2, ListTodo, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import PortalNavigation, { PortalSettingsLink } from "../components/PortalNavigation";
+import PortalUserProfile, { PortalUserAvatar } from "../components/PortalUserProfile";
 
 type TaskStatus = "todo" | "inprogress" | "done";
 
@@ -66,12 +67,12 @@ export default function TasksPage() {
       <PortalNavigation />
       <div className="sidebar-bottom">
         <PortalSettingsLink />
-        <div className="mini-profile"><span className="avatar">SA</span><span><span className="profile-name">Sarah Anderson</span><span className="profile-role">Product lead</span></span><ChevronDown size={14} color="#a5adbc" style={{ marginLeft: "auto" }} /></div>
+        <PortalUserProfile roleLabel="Product lead" />
       </div>
     </aside>
 
     <main className="main-content">
-      <div className="mobile-header"><TaskBrand /><span className="avatar avatar-header">SA</span></div>
+      <div className="mobile-header"><TaskBrand /><PortalUserAvatar className="avatar-header" /></div>
       <header className="main-header">
         <div><p className="breadcrumb"><strong>Workspace</strong> <span>/</span> Tasks</p><h1 className="page-title">Tasks</h1><p className="page-subtitle">Keep the work moving with a clear view of what needs attention.</p></div>
         <div className="tasks-header-note"><ListTodo size={15} /> {visibleTasks.length} visible tasks</div>

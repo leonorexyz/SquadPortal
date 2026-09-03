@@ -5,7 +5,6 @@ import {
   BookOpen,
   BriefcaseBusiness,
   CheckCircle2,
-  ChevronDown,
   CircleDot,
   FileText,
   Grid2X2,
@@ -22,6 +21,7 @@ import {
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import PortalNavigation, { PortalSettingsLink, portalHref } from "../components/PortalNavigation";
+import PortalUserProfile, { PortalUserAvatar, usePortalUser } from "../components/PortalUserProfile";
 
 type SupportTicket = {
   id: string;
@@ -66,6 +66,7 @@ const emptyTicketForm: TicketFormState = {
 };
 
 export default function TicketsPage() {
+  const currentUser = usePortalUser();
   const [ticketList, setTicketList] = useState(tickets);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("All tickets");
@@ -106,13 +107,12 @@ export default function TicketsPage() {
       return;
     }
     setTicketFormError("");
-    const initials = "SA";
-    const newTicket: SupportTicket = { id: `TKT-${1043 + ticketList.length}`, title: ticketForm.title.trim(), description: ticketForm.description.trim(), status: "Open", priority: ticketForm.priority, category: ticketForm.category, author: "Sarah Anderson", initials, assignee: ticketForm.assignee, replies: 0, updated: "just now" };
+    const newTicket: SupportTicket = { id: `TKT-${1043 + ticketList.length}`, title: ticketForm.title.trim(), description: ticketForm.description.trim(), status: "Open", priority: ticketForm.priority, category: ticketForm.category, author: currentUser.name, initials: currentUser.initials, assignee: ticketForm.assignee, replies: 0, updated: "just now" };
     setTicketList((current) => [newTicket, ...current]);
     closeTicketForm();
   }
 
-  return <div className="dashboard-shell"><aside className="sidebar" aria-label="Main navigation"><TicketBrand /> <PortalNavigation /><div className="sidebar-bottom"><PortalSettingsLink /><div className="mini-profile"><span className="avatar">SA</span><span><span className="profile-name">Sarah Anderson</span><span className="profile-role">Product lead</span></span><ChevronDown size={14} color="#a5adbc" style={{ marginLeft: "auto" }} /></div></div></aside><main className="main-content tickets-page"><div className="mobile-header"><TicketBrand /><span className="avatar avatar-header">SA</span></div><header className="main-header"><div><p className="breadcrumb"><strong>Team</strong> <span>/</span> Tickets</p><h1 className="page-title">Tickets</h1><p className="page-subtitle">Ask questions, share context, and help each other move forward.</p></div><button className="primary-button" type="button" onClick={openTicketForm}><Plus size={15} /> New ticket</button></header><section className="ticket-summary" aria-label="Ticket summary"><div><span>Open tickets</span><strong>04</strong><small>Needs a response</small></div><div><span>In progress</span><strong>03</strong><small>Being looked into</small></div><div><span>Resolved this month</span><strong>18</strong><small>+4 from last month</small></div><div><span>Average response</span><strong>2.4h</strong><small>Healthy this week</small></div></section><div className="ticket-toolbar"><div className="search-wrap ticket-search"><Search size={16} strokeWidth={1.8} aria-hidden="true" /><input className="search-input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search tickets..." aria-label="Search tickets" /></div><div className="ticket-filters"><select className="select-control" value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter tickets by status"><option>All tickets</option><option>Open</option><option>In progress</option><option>Resolved</option></select><select className="select-control" value={priority} onChange={(event) => setPriority(event.target.value)} aria-label="Filter tickets by priority"><option>All priorities</option><option>High</option><option>Medium</option><option>Low</option></select></div></div><section className="ticket-list" aria-label="Ticket list">{visibleTickets.map((ticket) => <TicketRow key={ticket.id} ticket={ticket} />)}{visibleTickets.length === 0 && <p className="empty-search">No tickets match your filters.</p>}</section>{isTicketFormOpen && <TicketFormModal form={ticketForm} error={ticketFormError} onChange={setTicketForm} onClose={closeTicketForm} onSubmit={handleTicketSubmit} />}</main></div>;
+  return <div className="dashboard-shell"><aside className="sidebar" aria-label="Main navigation"><TicketBrand /> <PortalNavigation /><div className="sidebar-bottom"><PortalSettingsLink /><PortalUserProfile roleLabel="Product lead" /></div></aside><main className="main-content tickets-page"><div className="mobile-header"><TicketBrand /><PortalUserAvatar className="avatar-header" /></div><header className="main-header"><div><p className="breadcrumb"><strong>Team</strong> <span>/</span> Tickets</p><h1 className="page-title">Tickets</h1><p className="page-subtitle">Ask questions, share context, and help each other move forward.</p></div><button className="primary-button" type="button" onClick={openTicketForm}><Plus size={15} /> New ticket</button></header><section className="ticket-summary" aria-label="Ticket summary"><div><span>Open tickets</span><strong>04</strong><small>Needs a response</small></div><div><span>In progress</span><strong>03</strong><small>Being looked into</small></div><div><span>Resolved this month</span><strong>18</strong><small>+4 from last month</small></div><div><span>Average response</span><strong>2.4h</strong><small>Healthy this week</small></div></section><div className="ticket-toolbar"><div className="search-wrap ticket-search"><Search size={16} strokeWidth={1.8} aria-hidden="true" /><input className="search-input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search tickets..." aria-label="Search tickets" /></div><div className="ticket-filters"><select className="select-control" value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter tickets by status"><option>All tickets</option><option>Open</option><option>In progress</option><option>Resolved</option></select><select className="select-control" value={priority} onChange={(event) => setPriority(event.target.value)} aria-label="Filter tickets by priority"><option>All priorities</option><option>High</option><option>Medium</option><option>Low</option></select></div></div><section className="ticket-list" aria-label="Ticket list">{visibleTickets.map((ticket) => <TicketRow key={ticket.id} ticket={ticket} />)}{visibleTickets.length === 0 && <p className="empty-search">No tickets match your filters.</p>}</section>{isTicketFormOpen && <TicketFormModal form={ticketForm} error={ticketFormError} onChange={setTicketForm} onClose={closeTicketForm} onSubmit={handleTicketSubmit} />}</main></div>;
 }
 
 function TicketBrand() {

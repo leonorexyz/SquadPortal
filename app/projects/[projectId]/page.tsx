@@ -7,7 +7,6 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   Check,
-  ChevronDown,
   Copy,
   CircleDot,
   Clock3,
@@ -30,6 +29,7 @@ import {
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import PortalNavigation, { PortalSettingsLink, portalHref } from "../../components/PortalNavigation";
+import PortalUserProfile, { PortalUserAvatar } from "../../components/PortalUserProfile";
 
 type ProjectTask = {
   title: string;
@@ -210,8 +210,8 @@ export default function ProjectDetailPage() {
   }
 
   return <div className="dashboard-shell">
-    <aside className="sidebar" aria-label="Main navigation"><ProjectBrand /> <PortalNavigation /><div className="sidebar-bottom"><PortalSettingsLink /><div className="mini-profile"><span className="avatar">SA</span><span><span className="profile-name">Sarah Anderson</span><span className="profile-role">Product lead</span></span><ChevronDown size={14} color="#a5adbc" style={{ marginLeft: "auto" }} /></div></div></aside>
-    <main className="main-content project-detail-page"><div className="mobile-header"><ProjectBrand /><span className="avatar avatar-header">SA</span></div>
+     <aside className="sidebar" aria-label="Main navigation"><ProjectBrand /> <PortalNavigation /><div className="sidebar-bottom"><PortalSettingsLink /><PortalUserProfile roleLabel="Product lead" /></div></aside>
+     <main className="main-content project-detail-page"><div className="mobile-header"><ProjectBrand /><PortalUserAvatar className="avatar-header" /></div>
       <header className="main-header detail-header"><div><p className="breadcrumb"><Link href="/projects"><ArrowLeft size={13} /> Projects</Link> <span>/</span> {project.name}</p><div className="detail-title-row"><h1 className="page-title">{project.name}</h1><span className={`project-status ${project.statusClass}`}>{project.status}</span></div><p className="page-subtitle">{project.description}</p></div><div className="detail-header-actions"><button className="secondary-button" type="button" onClick={copyShareLink}><Share2 size={14} /> {shareCopied ? "Link copied" : "Share"}</button><button className="secondary-button" type="button"><Pencil size={14} /> Edit project</button><button className="task-menu detail-menu" type="button" aria-label="More project options"><MoreHorizontal size={18} /></button></div></header>
       <section className="project-detail-hero"><div className="detail-progress-block"><div className="detail-progress-heading"><div><span className="project-summary-label">Project progress</span><strong>{project.progress}%</strong></div><span>{project.completedTasks} of {project.totalTasks} tasks complete</span></div><div className={`project-progress detail-progress ${project.color}`}><span style={{ width: `${project.progress}%` }} /></div></div><div className="detail-facts"><div><span>Project owner</span><strong><span className={`avatar avatar-tiny ${project.color}`}>{project.initials}</span>{project.owner}</strong></div><div><span>Due date</span><strong><CalendarDays size={14} /> {project.due}</strong></div><div><span>Visibility</span><strong><CircleDot size={13} /> {projectVisibility}</strong></div></div></section>
       <nav className="detail-tabs" aria-label="Project sections">{["Overview", "Tasks", "Activity"].map((tab) => <button className={activeTab === tab ? "active" : ""} key={tab} type="button" onClick={() => setActiveTab(tab)}>{tab}{tab === "Tasks" && <span>{project.totalTasks}</span>}</button>)}</nav>

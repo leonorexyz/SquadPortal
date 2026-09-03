@@ -1,21 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #172033;
-  --muted: #7a8397;
-  --soft-muted: #a5adbc;
-  --line: #e9edf4;
-  --canvas: #f7f8fc;
-  --panel: #ffffff;
-  --purple: #7357f6;
-  --purple-dark: #5b42df;
-  --purple-soft: #f0edff;
-  --green: #2eb67d;
-  --green-soft: #eafaf3;
-  --orange: #f5a524;
-  --orange-soft: #fff6e4;
-  --red: #e76868;
-  --red-soft: #fff0f0;
+  color-scheme: dark;
+  --ink: #eef4ff;
+  --muted: #9aaac0;
+  --soft-muted: #6f8098;
+  --line: rgba(145, 166, 199, 0.18);
+  --canvas: #070b14;
+  --panel: #0e1624;
+  --panel-raised: #121d2d;
+  --input: #0a1220;
+  --purple: #9b7bff;
+  --purple-dark: #c1b2ff;
+  --purple-soft: rgba(128, 93, 255, 0.16);
+  --cyan: #50ddff;
+  --cyan-soft: rgba(80, 221, 255, 0.13);
+  --green: #4be0a6;
+  --green-soft: rgba(75, 224, 166, 0.13);
+  --orange: #ffbd62;
+  --orange-soft: rgba(255, 189, 98, 0.14);
+  --red: #ff7789;
+  --red-soft: rgba(255, 119, 137, 0.14);
 }
 
 * {
@@ -5644,4 +5649,501 @@ button {
   .project-form-modal {
     padding: 20px;
   }
+}
+
+/* Dark tech theme */
+html {
+  background: var(--canvas);
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--canvas);
+  background-image:
+    radial-gradient(circle at 84% -8%, rgba(128, 93, 255, 0.18), transparent 31rem),
+    radial-gradient(circle at 4% 22%, rgba(80, 221, 255, 0.08), transparent 25rem),
+    linear-gradient(rgba(126, 153, 194, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(126, 153, 194, 0.035) 1px, transparent 1px);
+  background-size: auto, auto, 34px 34px, 34px 34px;
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(155, 123, 255, 0.35);
+  color: #fff;
+}
+
+.sidebar {
+  background: linear-gradient(180deg, #0b1220 0%, #09101b 100%);
+  border-right-color: var(--line);
+  box-shadow: 18px 0 45px rgba(0, 0, 0, 0.16);
+}
+
+.brand-icon {
+  background: linear-gradient(135deg, var(--purple) 0%, #705cff 52%, var(--cyan) 140%);
+  box-shadow: 0 0 0 1px rgba(155, 123, 255, 0.28), 0 10px 26px rgba(112, 92, 255, 0.32);
+}
+
+.brand-name,
+.profile-name,
+.page-title,
+.panel-title,
+.stat-number,
+.chart-total,
+.member-value,
+.project-percent,
+.task-title,
+.story-card-header strong,
+.story-card h3,
+.story-stat strong,
+.week-progress > div:last-child strong,
+.week-progress-ring strong,
+.ticket-main h2,
+.ticket-assignee strong,
+.ticket-thread-author strong,
+.ticket-reply-header strong,
+.thread-heading h2,
+.knowledge-card h2,
+.knowledge-article-intro,
+.knowledge-article h2,
+.knowledge-summary strong,
+.ticket-summary strong,
+.ticket-info-list > div > strong,
+.document-info-list strong {
+  color: var(--ink) !important;
+}
+
+.brand-caption,
+.profile-role,
+.nav-label,
+.breadcrumb,
+.page-subtitle,
+.panel-description,
+.stat-label,
+.stat-foot,
+.project-footer,
+.activity-time,
+.task-project,
+.empty-search,
+.story-stat small,
+.week-progress p,
+.week-progress-ring span,
+.week-labels span,
+.ticket-detail-meta,
+.ticket-thread-author small,
+.ticket-reply-header small,
+.knowledge-detail-meta,
+.knowledge-card-meta,
+.knowledge-card-footer,
+.knowledge-detail-sidebar,
+.document-info-list span {
+  color: var(--soft-muted);
+}
+
+.nav-label {
+  color: #71839d;
+}
+
+.nav-item {
+  color: #8799b2;
+}
+
+.nav-item:hover {
+  background: rgba(80, 221, 255, 0.07);
+  color: var(--cyan);
+}
+
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(128, 93, 255, 0.22), rgba(80, 221, 255, 0.08));
+  box-shadow: inset 2px 0 0 var(--cyan), 0 8px 24px rgba(0, 0, 0, 0.12);
+  color: #d9d0ff;
+}
+
+.nav-item .nav-count {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.sidebar-bottom {
+  border-top-color: var(--line);
+}
+
+.avatar {
+  background: rgba(155, 123, 255, 0.2);
+  color: #d0c6ff;
+}
+
+.avatar.purple,
+.avatar-tiny.purple {
+  background: rgba(155, 123, 255, 0.2);
+  color: #c8bcff;
+}
+
+.avatar.green,
+.avatar-tiny.green {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.avatar.orange,
+.avatar-tiny.orange {
+  background: var(--orange-soft);
+  color: var(--orange);
+}
+
+.avatar.blue,
+.avatar-tiny.blue {
+  background: var(--cyan-soft);
+  color: var(--cyan);
+}
+
+.avatar-tiny.pink {
+  background: rgba(224, 119, 255, 0.14);
+  color: #e59bff;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, #866bff 0%, #6d5bdf 100%);
+  border-color: #9b7bff;
+  box-shadow: 0 8px 20px rgba(112, 92, 255, 0.2);
+}
+
+.primary-button:hover {
+  background: linear-gradient(135deg, #a18aff 0%, #7a68ed 100%);
+  box-shadow: 0 10px 28px rgba(112, 92, 255, 0.3);
+}
+
+.secondary-button,
+.select-control,
+.icon-button {
+  background: var(--panel-raised) !important;
+  border-color: var(--line) !important;
+  color: var(--muted) !important;
+}
+
+.secondary-button:hover,
+.icon-button:hover {
+  background: rgba(128, 93, 255, 0.14) !important;
+  border-color: rgba(155, 123, 255, 0.48) !important;
+  color: var(--purple-dark) !important;
+}
+
+body :is(.stat-card, .panel, .quick-action-card, .member-list-panel, .story-stat, .story-card, .story-prompt, .week-progress, .composer-modal, .story-detail-modal, .project-form-modal, .delete-project-modal, .settings-placeholder, .integration-row, .google-task-source-panel, .google-picker-modal, .access-level-option, .knowledge-summary > div, .knowledge-card, .knowledge-article, .ticket-summary > div, .ticket-row, .ticket-question, .ticket-replies, .detail-panel) {
+  background: var(--panel) !important;
+  border-color: var(--line) !important;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(180, 206, 255, 0.035);
+}
+
+body :is(.quick-action-card, .story-card, .ticket-row, .knowledge-card, .integration-row, .google-picker-item, .access-level-option):hover {
+  border-color: rgba(155, 123, 255, 0.48) !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24), 0 0 24px rgba(128, 93, 255, 0.08);
+}
+
+.member-list-panel,
+.settings-placeholder,
+.knowledge-article,
+.ticket-question,
+.ticket-replies {
+  background: linear-gradient(145deg, rgba(16, 26, 42, 0.98), rgba(12, 20, 34, 0.98)) !important;
+}
+
+.stat-icon.blue,
+.quick-action-icon.blue,
+.tasks-summary-icon.blue,
+.resource-kind-icon.blue {
+  background: var(--cyan-soft) !important;
+  color: var(--cyan) !important;
+}
+
+.member-name,
+.project-name,
+.activity-text,
+.story-card-content,
+.ticket-main > p,
+.knowledge-card > p,
+.knowledge-article section p,
+.ticket-question > p,
+.ticket-reply p,
+.ticket-summary small,
+.knowledge-summary small,
+.story-prompt p {
+  color: var(--muted) !important;
+}
+
+.member-progress,
+.project-progress,
+.week-days span,
+.task-status-pill.todo,
+.project-status.onhold,
+.knowledge-access-pill.private,
+.ticket-priority.low {
+  background: var(--panel-raised) !important;
+  color: var(--soft-muted) !important;
+}
+
+.productivity-chart {
+  background: conic-gradient(var(--purple) 0 32%, var(--cyan) 32% 57%, var(--green) 57% 77%, var(--orange) 77% 100%);
+  box-shadow: 0 0 34px rgba(128, 93, 255, 0.16);
+}
+
+.productivity-chart::after {
+  background: var(--panel) !important;
+}
+
+.quick-action-card,
+.story-stat,
+.knowledge-card,
+.ticket-row {
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-action-card::before,
+.story-stat::before,
+.knowledge-card::before,
+.ticket-row::before {
+  background: linear-gradient(90deg, transparent, rgba(80, 221, 255, 0.7), transparent);
+  content: "";
+  height: 1px;
+  left: 18px;
+  opacity: 0.42;
+  position: absolute;
+  right: 18px;
+  top: 0;
+}
+
+body :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select:not(.ticket-status-select), .composer-input, .composer-textarea, .profile-settings-form input, .profile-settings-form textarea, .project-form-modal input, .project-form-modal select, .project-form-modal textarea, .ticket-reply-input) {
+  background: var(--input) !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
+}
+
+body :is(input, textarea, select)::placeholder,
+.project-form-modal input::placeholder,
+.project-form-modal textarea::placeholder {
+  color: #5f718a !important;
+}
+
+body :is(input, textarea, select):focus,
+.composer-input:focus,
+.composer-textarea:focus,
+.profile-settings-form input:focus,
+.project-form-modal input:focus,
+.project-form-modal select:focus,
+.project-form-modal textarea:focus,
+.ticket-reply-input:focus {
+  border-color: var(--cyan) !important;
+  box-shadow: 0 0 0 3px rgba(80, 221, 255, 0.12), 0 0 20px rgba(80, 221, 255, 0.08) !important;
+}
+
+.task-checkbox {
+  background: var(--input);
+  border-color: #52647d;
+}
+
+.task-checkbox:checked::after {
+  border-color: #fff;
+}
+
+.task-menu {
+  color: #71839d;
+}
+
+.task-menu:hover {
+  color: var(--cyan);
+}
+
+.focus-task-row,
+.story-card,
+.ticket-reply,
+.ticket-info-list > div,
+.document-info-list > div,
+.knowledge-article section,
+.knowledge-access-status,
+.modal-actions,
+.composer-footer {
+  border-color: var(--line) !important;
+}
+
+.project-status.ongoing,
+.story-count,
+.knowledge-type,
+.knowledge-access-pill.team,
+.ticket-status.in-progress,
+.ticket-priority.medium,
+.ticket-status-icon.in-progress,
+.week-days span.today,
+.access-level-option.selected {
+  background: var(--purple-soft) !important;
+  border-color: rgba(155, 123, 255, 0.45) !important;
+  color: var(--purple-dark) !important;
+}
+
+.project-status.review,
+.ticket-status.open,
+.ticket-status-icon.open,
+.ticket-status-select.open,
+.ticket-priority.high {
+  background: var(--orange-soft) !important;
+  color: var(--orange) !important;
+}
+
+.project-status.onhold,
+.ticket-priority.low {
+  color: var(--soft-muted) !important;
+}
+
+.member-status.active,
+.status-change-notice,
+.knowledge-article-footer,
+.knowledge-access-pill.public,
+.ticket-status.resolved,
+.ticket-status-icon.resolved,
+.ticket-status-select.resolved,
+.ticket-priority.low {
+  background: var(--green-soft) !important;
+  color: var(--green) !important;
+}
+
+.member-status.inactive,
+.member-status-action.inactive {
+  background: var(--red-soft) !important;
+  color: var(--red) !important;
+}
+
+.ticket-priority.high {
+  color: var(--orange) !important;
+}
+
+.ticket-status-select {
+  border-color: transparent !important;
+}
+
+.integration-status > span {
+  background: var(--panel-raised) !important;
+}
+
+.auth-page {
+  background: var(--canvas);
+  background-image:
+    radial-gradient(circle at 50% 0%, rgba(128, 93, 255, 0.2), transparent 32rem),
+    linear-gradient(rgba(126, 153, 194, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(126, 153, 194, 0.035) 1px, transparent 1px);
+  background-size: auto, 34px 34px, 34px 34px;
+}
+
+.auth-card {
+  background: linear-gradient(145deg, rgba(16, 26, 42, 0.98), rgba(9, 16, 28, 0.98));
+  border-color: var(--line);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.38), 0 0 50px rgba(128, 93, 255, 0.08);
+  overflow: hidden;
+  position: relative;
+}
+
+.auth-card::before {
+  background: linear-gradient(90deg, var(--purple), var(--cyan), transparent);
+  content: "";
+  height: 2px;
+  left: 0;
+  opacity: 0.8;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.auth-card h1 {
+  color: var(--ink);
+}
+
+.auth-description,
+.auth-footer,
+.auth-security,
+.auth-divider,
+.auth-method-switch,
+.auth-forgot-link,
+.auth-form-note,
+.auth-switch-account {
+  color: var(--muted);
+}
+
+.google-login-button {
+  background: var(--panel-raised);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.google-login-button:hover:not(:disabled) {
+  background: rgba(80, 221, 255, 0.08);
+  border-color: rgba(80, 221, 255, 0.5);
+  box-shadow: 0 0 24px rgba(80, 221, 255, 0.08);
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  background: var(--line);
+}
+
+.auth-card input {
+  background: var(--input);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.auth-card input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(80, 221, 255, 0.12);
+}
+
+.auth-card input::placeholder {
+  color: #5f718a;
+}
+
+.demo-account,
+.auth-success-check {
+  background: var(--panel-raised);
+  border-color: var(--line);
+}
+
+.composer-backdrop,
+.modal-backdrop {
+  background: rgba(2, 5, 12, 0.78);
+  backdrop-filter: blur(7px);
+}
+
+.composer-modal,
+.story-detail-modal,
+.project-form-modal,
+.delete-project-modal,
+.google-picker-modal {
+  border-color: rgba(155, 123, 255, 0.22) !important;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5), 0 0 34px rgba(128, 93, 255, 0.1) !important;
+}
+
+.danger-button {
+  background: #c94d68;
+  border-color: #e05e78;
+}
+
+.danger-button:hover {
+  background: #e2637d;
+}
+
+.delete-project-modal {
+  border-color: rgba(255, 119, 137, 0.3) !important;
+}
+
+.delete-project-icon {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.field-error,
+.form-error {
+  color: var(--red);
+}
+
+.full-width-button:disabled {
+  background: #253247;
+  border-color: #33445e;
+  color: #71839d;
 }

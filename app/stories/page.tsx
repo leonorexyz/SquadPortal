@@ -22,6 +22,7 @@ import { type FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import StoryList, { type Story } from "../components/StoryList";
 import PortalNavigation, { PortalSettingsLink, portalHref } from "../components/PortalNavigation";
+import PortalUserProfile, { PortalUserAvatar, usePortalUser } from "../components/PortalUserProfile";
 
 const DEFAULT_STORY_DATE = "2026-08-28";
 
@@ -95,6 +96,7 @@ const navigation = [
 ];
 
 export default function StoriesPage() {
+  const currentUser = usePortalUser();
   const [storyItems, setStoryItems] = useState(stories);
   const [query, setQuery] = useState("");
   const [member, setMember] = useState("All members");
@@ -150,8 +152,8 @@ export default function StoriesPage() {
     const dateLabel = storyDate === DEFAULT_STORY_DATE ? "Today, 28 Aug" : selectedDate.toLocaleDateString("en-US", { day: "numeric", month: "short" });
     setStoryItems((currentStories) => editingStory ? currentStories.map((story) => story.id === editingStory.id ? { ...story, storyDate, date: dateLabel, time: "Just now", title: storyTitle.trim() || "Daily check-in", content: trimmedContent } : story) : [{
       id: `story-${Date.now()}`,
-      author: "Sarah Anderson",
-      initials: "SA",
+      author: currentUser.name,
+      initials: currentUser.initials,
       avatar: "purple",
       storyDate,
       date: dateLabel,
@@ -179,12 +181,12 @@ export default function StoriesPage() {
     <aside className="sidebar" aria-label="Main navigation">
       <StoryBrand /> <PortalNavigation /><div className="sidebar-bottom">
         <PortalSettingsLink />
-        <div className="mini-profile"><span className="avatar">SA</span><span><span className="profile-name">Sarah Anderson</span><span className="profile-role">Product lead</span></span><ChevronDown size={14} color="#a5adbc" style={{ marginLeft: "auto" }} /></div>
+        <PortalUserProfile roleLabel="Product lead" />
       </div>
     </aside>
 
     <main className="main-content story-page">
-      <div className="mobile-header"><StoryBrand /><div className="header-actions"><span className="avatar avatar-header">SA</span></div></div>
+      <div className="mobile-header"><StoryBrand /><div className="header-actions"><PortalUserAvatar className="avatar-header" /></div></div>
       <header className="main-header">
         <div><p className="breadcrumb"><strong>Productivity</strong> <span>/</span> Vida story</p><h1 className="page-title">Vida story</h1><p className="page-subtitle">A little context from the people behind the work.</p></div>
         <button className="primary-button story-write-button" type="button" onClick={openNewComposer}><Plus size={15} strokeWidth={2} /> Write a story</button>

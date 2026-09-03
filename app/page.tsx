@@ -6,7 +6,6 @@ import {
   Bell,
   BookOpen,
   BriefcaseBusiness,
-  ChevronDown,
   CircleHelp,
   ClipboardCheck,
   FileText,
@@ -29,6 +28,7 @@ import ProductivityPieChart, { type ProductivityMember } from "./components/Prod
 import PortalNavigation, { PortalSettingsLink } from "./components/PortalNavigation";
 import QuickActions, { type QuickAction } from "./components/QuickActions";
 import { useAuthSession } from "./components/AuthSessionProvider";
+import PortalUserProfile, { usePortalUser } from "./components/PortalUserProfile";
 
 type IconComponent = typeof LayoutDashboard;
 type TrendDirection = "up" | "down" | "neutral";
@@ -170,13 +170,13 @@ function normalizeDashboardData(payload: unknown): DashboardData {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { session, signOut } = useAuthSession();
+  const { signOut } = useAuthSession();
+  const currentUser = usePortalUser();
   const [query, setQuery] = useState("");
   const [period, setPeriod] = useState("This week");
   const [dashboardData, setDashboardData] = useState<DashboardData>(mockDashboardData);
   const [dataSource, setDataSource] = useState<DataSource>("demo");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const currentUser = session?.user ?? { name: "Sarah Anderson", initials: "SA" };
 
   function navigateToPage(label: string) {
     router.push(pagePath(label));
@@ -326,14 +326,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       <PortalNavigation />
       <div className="sidebar-bottom">
         <PortalSettingsLink />
-        <div className="mini-profile">
-          <span className="avatar">SA</span>
-          <span>
-            <span className="profile-name">Sarah Anderson</span>
-            <span className="profile-role">Product lead</span>
-          </span>
-          <ChevronDown size={14} color="#a5adbc" style={{ marginLeft: "auto" }} />
-        </div>
+        <PortalUserProfile roleLabel="Product lead" />
       </div>
     </aside>
     <main className="main-content">{children}</main>

@@ -16,7 +16,8 @@ import {
   X,
 } from "lucide-react";
 import type { FormEvent } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import PortalUserProfile, { PortalUserAvatar, usePortalUser } from "../components/PortalUserProfile";
 
 type MemberStatus = "Active" | "Inactive";
 type MemberRole = "Admin" | "Editor" | "Viewer";
@@ -31,6 +32,42 @@ type TeamMember = {
   color: "purple" | "green" | "orange" | "blue";
   lastActive: string;
 };
+
+type ApiUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: "admin" | "editor" | "viewer";
+  status: "active" | "inactive";
+  updatedAt: string;
+};
+
+const memberColors: TeamMember["color"][] = ["purple", "green", "orange", "blue"];
+
+function getInitials(name: string, email: string) {
+  const initials = name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  return initials || email.slice(0, 2).toUpperCase();
+}
+
+function formatLastActive(updatedAt: string) {
+  const date = new Date(updatedAt);
+  if (Number.isNaN(date.getTime())) return "Recently updated";
+  const isToday = date.toDateString() === new Date().toDateString();
+  return isToday ? "Today" : date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function mapApiUser(user: ApiUser, index: number): TeamMember {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role === "admin" ? "Admin" : user.role === "editor" ? "Editor" : "Viewer",
+    status: user.status === "active" ? "Active" : "Inactive",
+    initials: getInitials(user.name, user.email),
+    color: memberColors[index % memberColors.length],
+    lastActive: formatLastActive(user.updatedAt),
+  };
+}
 
 type InviteFormState = {
   name: string;
@@ -64,7 +101,7 @@ const navigation = [
 ];
 
 export default function TeamPage() {
-  const [memberList, setMemberList] = useState(members);
+  const [memberList, setMemberList] = useState<TeamMember[]>([]);
   const [currentRole, setCurrentRole] = useState<MemberRole>("Admin");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("All members");
@@ -76,6 +113,40 @@ export default function TeamPage() {
   const [memberForRoleEdit, setMemberForRoleEdit] = useState<TeamMember | null>(null);
   const [roleForm, setRoleForm] = useState<MemberRole>("Editor");
   const [memberToToggle, setMemberToToggle] = useState<TeamMember | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const currentUser = usePortalUser();
+  const isMockAuth = process.env.NEXT_PUBLIC_AUTH_MOCK !== "false";
+  const requestUserId = isMockAuth ? "demo-user" : currentUser.id;
+
+  useEffect(() => {
+    if (!isMockAuth && currentUser.id === "workspace-member") {
+      setIsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    async function loadMembers() {
+      setIsLoading(true);
+      setLoadError("");
+      try {
+        const response = await fetch("/api/users", { headers: { Accept: "application/json", "x-user-id": requestUserId }, cache: "no-store" });
+        const body = await response.json() as { data?: ApiUser[]; error?: string };
+        if (!response.ok) throw new Error(body.error ?? "Unable to load team members");
+        if (!cancelled) setMemberList((body.data ?? []).map(mapApiUser));
+      } catch (error) {
+        if (cancelled) return;
+        setLoadError(error instanceof Error ? error.message : "Unable to load team members");
+        setMemberList(members);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    void loadMembers();
+    return () => { cancelled = true; };
+  }, [currentUser.id, isMockAuth, requestUserId]);
 
   const visibleMembers = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -107,7 +178,7 @@ export default function TeamPage() {
     setInviteError("");
   }
 
-  function handleInviteSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleInviteSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const name = inviteForm.name.trim();
     const email = inviteForm.email.trim().toLowerCase();
@@ -124,11 +195,24 @@ export default function TeamPage() {
       return;
     }
 
-    const initials = name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
-    const colors: TeamMember["color"][] = ["purple", "green", "orange", "blue"];
-    setMemberList((current) => [...current, { id: email, name, email, role: inviteForm.role, status: "Active", initials, color: colors[current.length % colors.length], lastActive: "Invited just now" }]);
-    setInviteMessage(`${name} has been added to the workspace.`);
-    closeInvite();
+    setIsSaving(true);
+    try {
+      const response = await fetch("/api/users", {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json", "x-user-id": requestUserId },
+        body: JSON.stringify({ name, email, role: inviteForm.role.toLowerCase(), status: "active", emailVerified: false }),
+      });
+      const body = await response.json() as { data?: ApiUser; error?: string } & Partial<ApiUser>;
+      if (!response.ok) throw new Error(body.error ?? "Unable to add team member");
+      const createdUser = body.data ?? body;
+      setMemberList((current) => [...current, mapApiUser(createdUser as ApiUser, current.length)]);
+      setInviteMessage(`${name} has been added to the workspace.`);
+      closeInvite();
+    } catch (error) {
+      setInviteError(error instanceof Error ? error.message : "Unable to add team member");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function openRoleEditor(member: TeamMember) {
@@ -140,19 +224,47 @@ export default function TeamPage() {
     setMemberForRoleEdit(null);
   }
 
-  function saveRole() {
+  async function saveRole() {
     if (!memberForRoleEdit) return;
-    setMemberList((current) => current.map((member) => member.id === memberForRoleEdit.id ? { ...member, role: roleForm } : member));
-    setInviteMessage(`${memberForRoleEdit.name}'s role is now ${roleForm}.`);
-    closeRoleEditor();
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/users/${memberForRoleEdit.id}/role`, {
+        method: "PATCH",
+        headers: { Accept: "application/json", "Content-Type": "application/json", "x-user-id": requestUserId },
+        body: JSON.stringify({ role: roleForm.toLowerCase() }),
+      });
+      const body = await response.json() as ApiUser & { error?: string };
+      if (!response.ok) throw new Error(body.error ?? "Unable to update member role");
+      setMemberList((current) => current.map((member) => member.id === body.id ? mapApiUser(body, current.findIndex((item) => item.id === body.id)) : member));
+      setInviteMessage(`${memberForRoleEdit.name}'s role is now ${roleForm}.`);
+      closeRoleEditor();
+    } catch (error) {
+      setInviteMessage(error instanceof Error ? error.message : "Unable to update member role");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
-  function confirmStatusChange() {
+  async function confirmStatusChange() {
     if (!memberToToggle) return;
     const nextStatus: MemberStatus = memberToToggle.status === "Active" ? "Inactive" : "Active";
-    setMemberList((current) => current.map((member) => member.id === memberToToggle.id ? { ...member, status: nextStatus, lastActive: nextStatus === "Inactive" ? "Access paused just now" : "Reactivated just now" } : member));
-    setInviteMessage(`${memberToToggle.name} is now ${nextStatus.toLowerCase()}.`);
-    setMemberToToggle(null);
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/users/${memberToToggle.id}/status`, {
+        method: "PATCH",
+        headers: { Accept: "application/json", "Content-Type": "application/json", "x-user-id": requestUserId },
+        body: JSON.stringify({ status: nextStatus.toLowerCase() }),
+      });
+      const body = await response.json() as ApiUser & { error?: string };
+      if (!response.ok) throw new Error(body.error ?? "Unable to update member status");
+      setMemberList((current) => current.map((member) => member.id === body.id ? mapApiUser(body, current.findIndex((item) => item.id === body.id)) : member));
+      setInviteMessage(`${memberToToggle.name} is now ${nextStatus.toLowerCase()}.`);
+      setMemberToToggle(null);
+    } catch (error) {
+      setInviteMessage(error instanceof Error ? error.message : "Unable to update member status");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -168,7 +280,7 @@ export default function TeamPage() {
         <div className="sidebar-bottom">
           {currentRole === "Admin" ? <Link className="nav-item" href="/settings"><Settings2 size={16} strokeWidth={1.8} /><span>Settings</span></Link> : null}
           <label className="role-switcher"><span>Preview menu as</span><select value={currentRole} onChange={(event) => setCurrentRole(event.target.value as MemberRole)} aria-label="Preview menu as role"><option>Admin</option><option>Editor</option><option>Viewer</option></select></label>
-          <div className="mini-profile"><span className="avatar avatar-small purple">SA</span><span><strong className="profile-name">Sarah Anderson</strong><small className="profile-role">{currentRole} access</small></span></div>
+          <PortalUserProfile roleLabel={`${currentRole} access`} avatarClassName="avatar-small purple" />
         </div>
       </aside>
 
@@ -176,9 +288,11 @@ export default function TeamPage() {
         <div className="mobile-header"><TeamBrand /><button className="icon-button" type="button" aria-label="Open navigation"><Users size={17} /></button></div>
         <header className="main-header">
           <div><p className="breadcrumb">Workspace <span>/</span> <strong>Team members</strong></p><h1 className="page-title">Team members</h1><p className="page-subtitle">Manage who can access your squad workspace.</p></div>
-          <div className="header-actions"><button className="icon-button" type="button" aria-label="Notifications"><span className="notification-dot" /><Users size={17} /></button><span className="avatar avatar-header purple">SA</span></div>
+          <div className="header-actions"><button className="icon-button" type="button" aria-label="Notifications"><span className="notification-dot" /><Users size={17} /></button><PortalUserAvatar className="avatar-header purple" /></div>
         </header>
 
+        {loadError ? <p className="field-error" role="alert">{loadError}</p> : null}
+        {isLoading ? <p className="empty-search" role="status">Loading team members...</p> : null}
         {inviteMessage ? <div className="member-feedback" role="status">{inviteMessage}<button type="button" aria-label="Dismiss notification" onClick={() => setInviteMessage("")}><X size={14} /></button></div> : null}
 
         <section className="member-summary" aria-label="Member summary">
@@ -189,7 +303,7 @@ export default function TeamPage() {
         </section>
 
         <section className="member-list-panel" aria-labelledby="member-list-title">
-          <div className="member-list-heading"><div><span className="eyebrow">Directory</span><h2 id="member-list-title">All members <span>{visibleMembers.length}</span></h2></div><button className="primary-button" type="button" onClick={openInvite}><Users size={15} /> Invite member</button></div>
+          <div className="member-list-heading"><div><span className="eyebrow">Directory</span><h2 id="member-list-title">All members <span>{visibleMembers.length}</span></h2></div><button className="primary-button" type="button" onClick={openInvite} disabled={isLoading || isSaving}><Users size={15} /> Invite member</button></div>
           <div className="member-toolbar">
             <label className="search-wrap"><Search size={15} aria-hidden="true" /><span className="sr-only">Search members</span><input className="search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by name or email..." /></label>
             <div className="toolbar-actions"><label className="sr-only" htmlFor="member-status">Filter by status</label><select id="member-status" className="select-control" value={status} onChange={(event) => setStatus(event.target.value)}><option>All members</option><option>Active</option><option>Inactive</option></select><label className="sr-only" htmlFor="member-role">Filter by role</label><select id="member-role" className="select-control" value={role} onChange={(event) => setRole(event.target.value)}><option>All roles</option><option>Admin</option><option>Editor</option><option>Viewer</option></select></div>
@@ -204,9 +318,9 @@ export default function TeamPage() {
           </div>
         </section>
       </main>
-      {isInviteOpen ? <InviteMemberModal form={inviteForm} error={inviteError} onChange={setInviteForm} onClose={closeInvite} onSubmit={handleInviteSubmit} /> : null}
-      {memberForRoleEdit ? <ChangeRoleModal member={memberForRoleEdit} role={roleForm} onRoleChange={setRoleForm} onClose={closeRoleEditor} onSave={saveRole} /> : null}
-      {memberToToggle ? <StatusChangeModal member={memberToToggle} onClose={() => setMemberToToggle(null)} onConfirm={confirmStatusChange} /> : null}
+      {isInviteOpen ? <InviteMemberModal form={inviteForm} error={inviteError} submitting={isSaving} onChange={setInviteForm} onClose={closeInvite} onSubmit={handleInviteSubmit} /> : null}
+      {memberForRoleEdit ? <ChangeRoleModal member={memberForRoleEdit} role={roleForm} submitting={isSaving} onRoleChange={setRoleForm} onClose={closeRoleEditor} onSave={saveRole} /> : null}
+      {memberToToggle ? <StatusChangeModal member={memberToToggle} submitting={isSaving} onClose={() => setMemberToToggle(null)} onConfirm={confirmStatusChange} /> : null}
     </div>
   );
 }
@@ -219,15 +333,15 @@ function SummaryCard({ label, value, detail, tone }: { label: string; value: num
   return <article className={`member-summary-card ${tone}`}><div className="member-summary-top"><span>{label}</span><span className="member-summary-dot" /></div><strong>{value}</strong><small>{detail}</small></article>;
 }
 
-function InviteMemberModal({ form, error, onChange, onClose, onSubmit }: { form: InviteFormState; error: string; onChange: (form: InviteFormState) => void; onClose: () => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="project-form-modal member-invite-modal" role="dialog" aria-modal="true" aria-labelledby="invite-member-title"><div className="modal-heading"><div><span className="eyebrow">Workspace access</span><h2 id="invite-member-title">Add a new member</h2><p>Give a teammate access to the squad workspace.</p></div><button className="modal-close" type="button" aria-label="Close invite form" onClick={onClose}><X size={17} /></button></div><form onSubmit={onSubmit}><label>Full name<input autoFocus required value={form.name} onChange={(event) => onChange({ ...form, name: event.target.value })} placeholder="e.g. Maya Putri" /></label><label>Email address<input required type="email" value={form.email} onChange={(event) => onChange({ ...form, email: event.target.value })} placeholder="name@company.com" /></label><label>Workspace role<select value={form.role} onChange={(event) => onChange({ ...form, role: event.target.value as MemberRole })}><option>Admin</option><option>Editor</option><option>Viewer</option></select></label>{error ? <p className="form-error" role="alert">{error}</p> : null}<div className="modal-actions"><button className="secondary-button" type="button" onClick={onClose}>Cancel</button><button className="primary-button" type="submit">Add member</button></div></form></section></div>;
+function InviteMemberModal({ form, error, submitting, onChange, onClose, onSubmit }: { form: InviteFormState; error: string; submitting: boolean; onChange: (form: InviteFormState) => void; onClose: () => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void> }) {
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !submitting) onClose(); }}><section className="project-form-modal member-invite-modal" role="dialog" aria-modal="true" aria-labelledby="invite-member-title"><div className="modal-heading"><div><span className="eyebrow">Workspace access</span><h2 id="invite-member-title">Add a new member</h2><p>Give a teammate access to the squad workspace.</p></div><button className="modal-close" type="button" aria-label="Close invite form" onClick={onClose} disabled={submitting}><X size={17} /></button></div><form onSubmit={onSubmit}><label>Full name<input autoFocus required disabled={submitting} value={form.name} onChange={(event) => onChange({ ...form, name: event.target.value })} placeholder="e.g. Maya Putri" /></label><label>Email address<input required type="email" disabled={submitting} value={form.email} onChange={(event) => onChange({ ...form, email: event.target.value })} placeholder="name@company.com" /></label><label>Workspace role<select disabled={submitting} value={form.role} onChange={(event) => onChange({ ...form, role: event.target.value as MemberRole })}><option>Admin</option><option>Editor</option><option>Viewer</option></select></label>{error ? <p className="form-error" role="alert">{error}</p> : null}<div className="modal-actions"><button className="secondary-button" type="button" onClick={onClose} disabled={submitting}>Cancel</button><button className="primary-button" type="submit" disabled={submitting}>{submitting ? "Adding..." : "Add member"}</button></div></form></section></div>;
 }
 
-function ChangeRoleModal({ member, role, onRoleChange, onClose, onSave }: { member: TeamMember; role: MemberRole; onRoleChange: (role: MemberRole) => void; onClose: () => void; onSave: () => void }) {
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="project-form-modal member-role-modal" role="dialog" aria-modal="true" aria-labelledby="change-role-title"><div className="modal-heading"><div><span className="eyebrow">Member permissions</span><h2 id="change-role-title">Change member role</h2><p>Update the workspace access for {member.name}.</p></div><button className="modal-close" type="button" aria-label="Close role form" onClick={onClose}><X size={17} /></button></div><div className="role-member-preview"><span className={`avatar ${member.color}`}>{member.initials}</span><span><strong>{member.name}</strong><small>{member.email}</small></span></div><label className="role-select-label">Workspace role<select value={role} onChange={(event) => onRoleChange(event.target.value as MemberRole)}><option>Admin</option><option>Editor</option><option>Viewer</option></select></label><p className="role-help"><strong>{role}</strong> {role === "Admin" ? "can manage members, settings, and all workspace content." : role === "Editor" ? "can create and update workspace content." : "has read-only access to shared workspace content."}</p><div className="modal-actions"><button className="secondary-button" type="button" onClick={onClose}>Cancel</button><button className="primary-button" type="button" onClick={onSave}>Save role</button></div></section></div>;
+function ChangeRoleModal({ member, role, submitting, onRoleChange, onClose, onSave }: { member: TeamMember; role: MemberRole; submitting: boolean; onRoleChange: (role: MemberRole) => void; onClose: () => void; onSave: () => void | Promise<void> }) {
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !submitting) onClose(); }}><section className="project-form-modal member-role-modal" role="dialog" aria-modal="true" aria-labelledby="change-role-title"><div className="modal-heading"><div><span className="eyebrow">Member permissions</span><h2 id="change-role-title">Change member role</h2><p>Update the workspace access for {member.name}.</p></div><button className="modal-close" type="button" aria-label="Close role form" onClick={onClose} disabled={submitting}><X size={17} /></button></div><div className="role-member-preview"><span className={`avatar ${member.color}`}>{member.initials}</span><span><strong>{member.name}</strong><small>{member.email}</small></span></div><label className="role-select-label">Workspace role<select disabled={submitting} value={role} onChange={(event) => onRoleChange(event.target.value as MemberRole)}><option>Admin</option><option>Editor</option><option>Viewer</option></select></label><p className="role-help"><strong>{role}</strong> {role === "Admin" ? "can manage members, settings, and all workspace content." : role === "Editor" ? "can create and update workspace content." : "has read-only access to shared workspace content."}</p><div className="modal-actions"><button className="secondary-button" type="button" onClick={onClose} disabled={submitting}>Cancel</button><button className="primary-button" type="button" onClick={onSave} disabled={submitting}>{submitting ? "Saving..." : "Save role"}</button></div></section></div>;
 }
 
-function StatusChangeModal({ member, onClose, onConfirm }: { member: TeamMember; onClose: () => void; onConfirm: () => void }) {
+function StatusChangeModal({ member, submitting, onClose, onConfirm }: { member: TeamMember; submitting: boolean; onClose: () => void; onConfirm: () => void | Promise<void> }) {
   const isDeactivating = member.status === "Active";
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="delete-project-modal member-status-modal" role="alertdialog" aria-modal="true" aria-labelledby="member-status-title" aria-describedby="member-status-description"><div className="delete-project-icon"><UserX size={18} /></div><div><h2 id="member-status-title">{isDeactivating ? "Deactivate" : "Activate"} {member.name}?</h2><p id="member-status-description">{isDeactivating ? "This member will lose access to the workspace until you activate them again." : "This member will be able to access the workspace again."}</p></div><div className="modal-actions"><button className="secondary-button" type="button" onClick={onClose}>Cancel</button><button className={isDeactivating ? "danger-button" : "primary-button"} type="button" onClick={onConfirm}>{isDeactivating ? "Deactivate member" : "Activate member"}</button></div></section></div>;
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !submitting) onClose(); }}><section className="delete-project-modal member-status-modal" role="alertdialog" aria-modal="true" aria-labelledby="member-status-title" aria-describedby="member-status-description"><div className="delete-project-icon"><UserX size={18} /></div><div><h2 id="member-status-title">{isDeactivating ? "Deactivate" : "Activate"} {member.name}?</h2><p id="member-status-description">{isDeactivating ? "This member will lose access to the workspace until you activate them again." : "This member will be able to access the workspace again."}</p></div><div className="modal-actions"><button className="secondary-button" type="button" onClick={onClose} disabled={submitting}>Cancel</button><button className={isDeactivating ? "danger-button" : "primary-button"} type="button" onClick={onConfirm} disabled={submitting}>{submitting ? "Saving..." : isDeactivating ? "Deactivate member" : "Activate member"}</button></div></section></div>;
 }
