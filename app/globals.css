@@ -6196,3 +6196,70 @@ body :is(input, textarea, select):focus,
   border-color: #33445e;
   color: #71839d;
 }
+
+/* Finish dark surfaces for Tasks, Team, and Settings */
+body :is(.tasks-summary > div, .member-toolbar, .role-member-preview, .access-overview, .resource-access-panel, .google-sync-simulator, .google-picker-item, .resource-access-manage) {
+  background: var(--panel-raised) !important;
+  border-color: var(--line) !important;
+}
+
+.tasks-summary > div,
+.access-overview,
+.resource-access-panel {
+  background: linear-gradient(145deg, rgba(16, 26, 42, 0.98), rgba(12, 20, 34, 0.98)) !important;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(180, 206, 255, 0.035);
+}
+
+.tasks-table-row,
+.member-table td,
+.google-task-row + .google-task-row,
+.resource-access-row + .resource-access-row {
+  border-color: var(--line) !important;
+}
+
+.task-assignee,
+.member-role,
+.google-task-status,
+.resource-visibility {
+  color: var(--muted) !important;
+}
+
+.member-toolbar {
+  background: rgba(10, 18, 32, 0.72) !important;
+}
+
+.role-member-preview,
+.google-sync-simulator {
+  background: rgba(18, 29, 45, 0.82) !important;
+}
+
+.role-help {
+  color: var(--purple-dark) !important;
+}
+
+.member-feedback {
+  border-color: rgba(75, 224, 166, 0.28) !important;
+  color: var(--green) !important;
+}
+
+.resource-access-manage {
+  color: var(--purple-dark) !important;
+}
+
+.resource-access-manage:hover {
+  background: var(--purple-soft) !important;
+  border-color: rgba(155, 123, 255, 0.48) !important;
+}
+
+.resource-visibility select {
+  background: var(--input) !important;
+  color: var(--ink) !important;
+}
+
+.toggle-track {
+  background: #2b3b53 !important;
+}
+
+.toggle-track > span {
+  background: #dbe7fa !important;
+}
