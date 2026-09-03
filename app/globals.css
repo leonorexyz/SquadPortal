@@ -5665,7 +5665,18 @@ body {
     linear-gradient(rgba(126, 153, 194, 0.035) 1px, transparent 1px),
     linear-gradient(90deg, rgba(126, 153, 194, 0.035) 1px, transparent 1px);
   background-size: auto, auto, 34px 34px, 34px 34px;
+  font-family: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.005em;
   min-height: 100vh;
+}
+
+body :is(h1, h2, h3, h4, button, input, select, textarea) {
+  font-family: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body :is(h1, h2, h3, h4) {
+  font-weight: 750;
 }
 
 ::selection {
@@ -5828,13 +5839,13 @@ body {
   color: var(--purple-dark) !important;
 }
 
-body :is(.stat-card, .panel, .quick-action-card, .member-list-panel, .story-stat, .story-card, .story-prompt, .week-progress, .composer-modal, .story-detail-modal, .project-form-modal, .delete-project-modal, .settings-placeholder, .integration-row, .google-task-source-panel, .google-picker-modal, .access-level-option, .knowledge-summary > div, .knowledge-card, .knowledge-article, .ticket-summary > div, .ticket-row, .ticket-question, .ticket-replies, .detail-panel) {
+body :is(.stat-card, .panel, .quick-action-card, .member-list-panel, .story-stat, .story-card, .story-prompt, .week-progress, .composer-modal, .story-detail-modal, .project-form-modal, .delete-project-modal, .settings-placeholder, .integration-row, .google-task-source-panel, .google-picker-modal, .access-level-option, .knowledge-summary > div, .knowledge-card, .knowledge-article, .ticket-summary > div, .ticket-row, .ticket-question, .ticket-replies, .detail-panel, .project-summary-grid > div, .project-card) {
   background: var(--panel) !important;
   border-color: var(--line) !important;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(180, 206, 255, 0.035);
 }
 
-body :is(.quick-action-card, .story-card, .ticket-row, .knowledge-card, .integration-row, .google-picker-item, .access-level-option):hover {
+body :is(.quick-action-card, .story-card, .ticket-row, .knowledge-card, .integration-row, .google-picker-item, .access-level-option, .project-card):hover {
   border-color: rgba(155, 123, 255, 0.48) !important;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24), 0 0 24px rgba(128, 93, 255, 0.08);
 }
@@ -5986,6 +5997,44 @@ body :is(input, textarea, select):focus,
 .ticket-priority.high {
   background: var(--orange-soft) !important;
   color: var(--orange) !important;
+}
+
+.project-status.completed {
+  background: var(--green-soft) !important;
+  color: var(--green) !important;
+}
+
+.project-card {
+  background: linear-gradient(145deg, rgba(16, 26, 42, 0.98), rgba(12, 20, 34, 0.98)) !important;
+}
+
+.project-summary-grid > div {
+  background: linear-gradient(145deg, rgba(16, 26, 42, 0.98), rgba(12, 20, 34, 0.98)) !important;
+}
+
+.project-card h2 {
+  font-weight: 750;
+}
+
+.project-card > p {
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.project-card-meta,
+.project-card-progress > div:first-child,
+.project-card-footer {
+  font-size: 10px;
+}
+
+.project-accent.blue,
+.project-progress.blue span {
+  background: var(--cyan);
+}
+
+.project-accent.pink,
+.project-progress.pink span {
+  background: #e59bff;
 }
 
 .project-status.onhold,
