@@ -39,6 +39,7 @@ function getInitials(name: string, email: string) {
 export function AuthSessionProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const isMockAuth = process.env.NEXT_PUBLIC_AUTH_MOCK !== "false";
   const [mockSession, setMockSession] = useState<MockSession | null>(null);
+  const [productionRole, setProductionRole] = useState<MockSession["user"]["role"]>("Viewer");
   const [isMockReady, setIsMockReady] = useState(!isMockAuth);
   const { data: betterAuthSession, isPending: isBetterAuthPending } = authClient.useSession();
 
@@ -55,6 +56,27 @@ export function AuthSessionProvider({ children }: Readonly<{ children: React.Rea
     }
   }, [isMockAuth]);
 
+  useEffect(() => {
+    if (isMockAuth || !betterAuthSession?.user) return;
+
+    let cancelled = false;
+    setProductionRole("Viewer");
+    async function loadProductionRole() {
+      try {
+        const response = await fetch("/api/profile", { headers: { Accept: "application/json" }, cache: "no-store" });
+        if (!response.ok) return;
+        const profile = await response.json() as { role?: "admin" | "editor" | "viewer" };
+        if (cancelled || !profile.role) return;
+        setProductionRole(profile.role === "admin" ? "Admin" : profile.role === "editor" ? "Editor" : "Viewer");
+      } catch {
+        // Keep the safe read-only fallback when the profile request is unavailable.
+      }
+    }
+
+    void loadProductionRole();
+    return () => { cancelled = true; };
+  }, [betterAuthSession?.user?.id, isMockAuth]);
+
   const session = useMemo<MockSession | null>(() => {
     if (isMockAuth) return mockSession;
 
@@ -67,11 +89,11 @@ export function AuthSessionProvider({ children }: Readonly<{ children: React.Rea
         name: user.name,
         email: user.email,
         initials: getInitials(user.name, user.email),
-        role: "Viewer",
+        role: productionRole,
       },
       provider: "Google",
     };
-  }, [betterAuthSession, isMockAuth, mockSession]);
+  }, [betterAuthSession, isMockAuth, mockSession, productionRole]);
 
   const isReady = isMockAuth ? isMockReady : !isBetterAuthPending;
 

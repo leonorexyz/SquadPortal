@@ -102,7 +102,7 @@ const navigation = [
 
 export default function TeamPage() {
   const [memberList, setMemberList] = useState<TeamMember[]>([]);
-  const [currentRole, setCurrentRole] = useState<MemberRole>("Admin");
+  const [currentRole, setCurrentRole] = useState<MemberRole>("Viewer");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("All members");
   const [role, setRole] = useState("All roles");
@@ -119,6 +119,10 @@ export default function TeamPage() {
   const currentUser = usePortalUser();
   const isMockAuth = process.env.NEXT_PUBLIC_AUTH_MOCK !== "false";
   const requestUserId = isMockAuth ? "demo-user" : currentUser.id;
+
+  useEffect(() => {
+    setCurrentRole(currentUser.role);
+  }, [currentUser.role]);
 
   useEffect(() => {
     if (!isMockAuth && currentUser.id === "workspace-member") {
