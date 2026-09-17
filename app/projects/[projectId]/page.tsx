@@ -316,8 +316,6 @@ const projectDetails: Record<string, ProjectDetail> = {
   },
 };
 
-const fallbackProject = projectDetails["website-redesign"];
-
 type TaskFormState = Pick<ProjectTask, "title" | "status" | "assignee" | "due">;
 
 const emptyTaskForm: TaskFormState = {
@@ -339,19 +337,19 @@ const navigation = [
 
 export default function ProjectDetailPage() {
   const params = useParams<{ projectId: string }>();
-  const initialProject = projectDetails[params.projectId] ?? fallbackProject;
-  const [project, setProject] = useState(initialProject);
+  const [project, setProject] = useState<ProjectDetail | null>(null);
   const [activeTab, setActiveTab] = useState("Overview");
-  const [tasks, setTasks] = useState(project.tasks);
+  const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [taskForm, setTaskForm] = useState<TaskFormState>(emptyTaskForm);
   const [editingTaskTitle, setEditingTaskTitle] = useState<string | null>(null);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<ProjectTask | null>(null);
   const [taskFilter, setTaskFilter] = useState("All tasks");
-  const [projectVisibility, setProjectVisibility] = useState<ProjectDetail["visibility"]>(project.visibility);
+  const [projectVisibility, setProjectVisibility] = useState<ProjectDetail["visibility"]>("Internal");
   const [shareCopied, setShareCopied] = useState(false);
   const [syncNotice, setSyncNotice] = useState("");
   const [projectError, setProjectError] = useState("");
+  const [isProjectLoading, setIsProjectLoading] = useState(true);
   const currentUser = usePortalUser();
   const isMockAuth = process.env.NEXT_PUBLIC_AUTH_MOCK !== "false";
   const requestUserId = isMockAuth ? "demo-user" : currentUser.id;
@@ -360,12 +358,11 @@ export default function ProjectDetailPage() {
     if (!isMockAuth && currentUser.id === "workspace-member") return;
     const controller = new AbortController();
     const staticProject = projectDetails[params.projectId];
-    if (staticProject) {
-      setProject(staticProject);
-      setTasks(staticProject.tasks);
-      setProjectVisibility(staticProject.visibility);
-    }
+    setProject(null);
+    setTasks([]);
+    setProjectVisibility("Internal");
     setProjectError("");
+    setIsProjectLoading(true);
     void fetch(`/api/projects/${params.projectId}`, { signal: controller.signal, cache: "no-store", headers: { Accept: "application/json", "x-user-id": requestUserId } })
       .then(async (response) => {
         if (!response.ok) throw new Error(await responseError(response));
@@ -379,8 +376,14 @@ export default function ProjectDetailPage() {
       })
       .catch((error) => {
         if (error instanceof Error && error.name === "AbortError") return;
+        setProject(staticProject ?? null);
+        if (staticProject) {
+          setTasks(staticProject.tasks);
+          setProjectVisibility(staticProject.visibility);
+        }
         setProjectError(error instanceof Error ? error.message : "Unable to load project");
-      });
+      })
+      .finally(() => { if (!controller.signal.aborted) setIsProjectLoading(false); });
     return () => controller.abort();
   }, [currentUser.id, currentUser.name, isMockAuth, params.projectId, requestUserId]);
 
@@ -444,6 +447,8 @@ export default function ProjectDetailPage() {
     setShareCopied(true);
   }
 
+  if (isProjectLoading || !project) return isProjectLoading ? <ProjectDetailSkeleton /> : <ProjectNotFoundState message={projectError} />;
+
   return <div className="dashboard-shell">
      <aside className="sidebar" aria-label="Main navigation"><ProjectBrand /> <PortalNavigation /><div className="sidebar-bottom"><PortalSettingsLink /><PortalUserProfile roleLabel="Product lead" /></div></aside>
      <main className="main-content project-detail-page"><div className="mobile-header"><ProjectBrand /><PortalUserAvatar className="avatar-header" /></div>
@@ -459,6 +464,14 @@ export default function ProjectDetailPage() {
       {taskToDelete ? <DeleteTaskModal task={taskToDelete} onCancel={() => setTaskToDelete(null)} onConfirm={confirmDeleteTask} /> : null}
     </main>
   </div>;
+}
+
+function ProjectDetailSkeleton() {
+  return <div className="dashboard-shell"><aside className="sidebar" aria-hidden="true"><ProjectBrand /><PortalNavigation /><div className="sidebar-bottom"><PortalSettingsLink /><PortalUserProfile roleLabel="Product lead" /></div></aside><main className="main-content project-detail-page project-detail-loading" aria-busy="true" aria-label="Loading project details" role="status"><div className="project-detail-skeleton"><span className="loading-skeleton skeleton-breadcrumb" /><div className="skeleton-detail-header"><div><span className="loading-skeleton skeleton-title" /><span className="loading-skeleton skeleton-subtitle" /></div><div className="skeleton-header-actions"><span className="loading-skeleton skeleton-action" /><span className="loading-skeleton skeleton-action" /></div></div><section className="loading-skeleton skeleton-detail-hero"><div className="skeleton-facts">{[1, 2, 3, 4].map((item) => <span className="skeleton-fact" key={item}><span className="loading-skeleton skeleton-fact-label" /><span className="loading-skeleton skeleton-fact-value" /></span>)}</div></section><div className="skeleton-tabs"><span className="loading-skeleton skeleton-tab" /><span className="loading-skeleton skeleton-tab" /><span className="loading-skeleton skeleton-tab" /></div><div className="skeleton-detail-grid"><section className="loading-skeleton skeleton-panel"><span className="skeleton-panel-heading" /><span className="skeleton-panel-line" /><span className="skeleton-panel-line" /><span className="skeleton-panel-line" /><span className="skeleton-panel-line" /></section><aside className="skeleton-side-stack"><section className="loading-skeleton skeleton-panel skeleton-panel-small"><span className="skeleton-panel-heading" /><span className="skeleton-panel-line" /><span className="skeleton-panel-line" /><span className="skeleton-panel-line" /></section><section className="loading-skeleton skeleton-panel skeleton-panel-small"><span className="skeleton-panel-heading" /><span className="skeleton-panel-line" /><span className="skeleton-panel-line" /><span className="skeleton-panel-line" /></section></aside></div></div></main></div>;
+}
+
+function ProjectNotFoundState({ message }: { message: string }) {
+  return <div className="dashboard-shell"><aside className="sidebar"><ProjectBrand /><PortalNavigation /><div className="sidebar-bottom"><PortalSettingsLink /><PortalUserProfile roleLabel="Product lead" /></div></aside><main className="main-content project-detail-page project-not-found"><Link className="back-link" href="/projects"><ArrowLeft size={13} /> Back to projects</Link><h1 className="page-title">Project unavailable</h1><p className="page-subtitle">{message || "This project could not be loaded."}</p></main></div>;
 }
 
 function ProjectBrand() {
