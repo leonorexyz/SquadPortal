@@ -5,8 +5,21 @@ import { type ProjectInput, type ProjectStatus, type ProjectUpdate } from "./sch
 
 export const DEFAULT_PROJECT_OWNER_ID = "demo-user";
 
+export class ProjectOwnerError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ProjectOwnerError";
+  }
+}
+
 async function ensureDemoOwner(ownerId = DEFAULT_PROJECT_OWNER_ID) {
   await db.insert(users).values({ id: ownerId, email: ownerId === DEFAULT_PROJECT_OWNER_ID ? "sarah@squad.local" : `${ownerId}@squad.local`, name: ownerId === DEFAULT_PROJECT_OWNER_ID ? "Sarah Anderson" : ownerId, role: "admin", status: "active" }).onConflictDoNothing().run();
+}
+
+async function assertProjectOwner(ownerId: string) {
+  const owner = await db.select({ id: users.id, status: users.status }).from(users).where(eq(users.id, ownerId)).get();
+  if (!owner) throw new ProjectOwnerError("Project owner was not found in the workspace");
+  if (owner.status !== "active") throw new ProjectOwnerError("Project owner must be an active workspace member");
 }
 
 function mapProject(project: typeof projects.$inferSelect) {
@@ -35,7 +48,7 @@ export async function getProject(projectId: string) {
 
 export async function createProject(input: ProjectInput) {
   const ownerId = input.ownerId ?? DEFAULT_PROJECT_OWNER_ID;
-  await ensureDemoOwner(ownerId);
+  await assertProjectOwner(ownerId);
   const project = { id: `project-${crypto.randomUUID()}`, name: input.name, description: input.description, client: input.client?.trim() || null, status: input.status, visibility: input.visibility, dueDate: input.dueDate ?? null, ownerId, createdAt: new Date() };
   await db.insert(projects).values(project).run();
   return mapProject(project);
@@ -44,6 +57,7 @@ export async function createProject(input: ProjectInput) {
 export async function updateProject(projectId: string, input: ProjectUpdate) {
   const current = await db.select().from(projects).where(eq(projects.id, projectId)).get();
   if (!current) return null;
+  if (input.ownerId) await assertProjectOwner(input.ownerId);
   const update = {
     ...input,
     ...(input.client !== undefined ? { client: input.client?.trim() || null } : {}),

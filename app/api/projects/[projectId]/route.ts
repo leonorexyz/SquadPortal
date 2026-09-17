@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { authorizeRequest } from "../../../../lib/auth/permissions";
-import { deleteProject, getProject, updateProject } from "../../../../lib/projects/service";
+import { deleteProject, getProject, ProjectOwnerError, updateProject } from "../../../../lib/projects/service";
 import { projectResponseSchema, projectUpdateSchema } from "../../../../lib/projects/schema";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +32,7 @@ export async function PATCH(request: NextRequest, context: ProjectRouteContext) 
     return project ? NextResponse.json(projectResponseSchema.parse(project)) : NextResponse.json({ error: "Project not found" }, { status: 404 });
   } catch (error) {
     if (error instanceof ZodError) return NextResponse.json({ error: "Invalid project payload", details: error.flatten() }, { status: 400 });
+    if (error instanceof ProjectOwnerError) return NextResponse.json({ error: error.message }, { status: 400 });
     console.error("Failed to update project", error);
     return NextResponse.json({ error: "Unable to update project" }, { status: 500 });
   }

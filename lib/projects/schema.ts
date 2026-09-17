@@ -26,6 +26,7 @@ export const projectUpdateSchema = z.object({
   status: projectStatusSchema.optional(),
   visibility: z.enum(["internal", "public"]).optional(),
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "dueDate must use YYYY-MM-DD").nullable().optional(),
+  ownerId: z.string().trim().min(1).optional(),
 }).refine((value) => Object.keys(value).length > 0, "At least one field is required");
 
 export const projectResponseSchema = z.object({

@@ -83,6 +83,11 @@ type ApiProject = {
   createdAt: string;
 };
 
+type ProjectOwner = {
+  id: string;
+  name: string;
+};
+
 type ApiTask = {
   id: string;
   title: string;
@@ -160,9 +165,9 @@ async function responseError(response: Response) {
   try { const body = await response.json() as { error?: string }; return body.error ?? `Request failed (${response.status})`; } catch { return `Request failed (${response.status})`; }
 }
 
-function mapApiProjectDetail(apiProject: ApiProject, baseProject: ProjectDetail | undefined, currentUser: { id: string; name: string }, colorIndex: number): ProjectDetail {
+function mapApiProjectDetail(apiProject: ApiProject, baseProject: ProjectDetail | undefined, currentUser: { id: string; name: string }, colorIndex: number, ownerMap: Map<string, ProjectOwner> = new Map()): ProjectDetail {
   const status = displayStatus(apiProject.status);
-  const owner = baseProject?.owner ?? (apiProject.ownerId === currentUser.id ? currentUser.name : apiProject.ownerId);
+  const owner = ownerMap.get(apiProject.ownerId)?.name ?? (apiProject.ownerId === currentUser.id ? currentUser.name : baseProject?.owner ?? apiProject.ownerId);
   const initials = owner.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   const fallback: ProjectDetail = baseProject ?? {
     name: apiProject.name,
@@ -370,14 +375,21 @@ const emptyTaskForm: TaskFormState = {
 };
 
 const navigation = [
-  { label: "Overview", icon: LayoutDashboard },
-  { label: "Vida story", icon: FileText },
+  { label: "Dashboard", icon: LayoutDashboard },
+  { label: "VIDA Story", icon: FileText },
   { label: "Projects", icon: BriefcaseBusiness },
   { label: "Tasks", icon: ListTodo },
-  { label: "Knowledge base", icon: BookOpen },
+  { label: "Knowledge Base", icon: BookOpen },
   { label: "Tickets", icon: Ticket, count: "4" },
   { label: "Team members", icon: Users },
 ];
+
+async function fetchProjectOwners(requestUserId: string, signal?: AbortSignal) {
+  const response = await fetch("/api/users?status=active", { signal, cache: "no-store", headers: { Accept: "application/json", "x-user-id": requestUserId } });
+  if (!response.ok) throw new Error(await responseError(response));
+  const body = await response.json() as { data?: ProjectOwner[] };
+  return body.data ?? [];
+}
 
 export default function ProjectDetailPage() {
   const params = useParams<{ projectId: string }>();
@@ -408,13 +420,15 @@ export default function ProjectDetailPage() {
     setProjectVisibility("Internal");
     setProjectError("");
     setIsProjectLoading(true);
-    void fetch(`/api/projects/${params.projectId}`, { signal: controller.signal, cache: "no-store", headers: { Accept: "application/json", "x-user-id": requestUserId } })
+    const projectRequest = fetch(`/api/projects/${params.projectId}`, { signal: controller.signal, cache: "no-store", headers: { Accept: "application/json", "x-user-id": requestUserId } })
       .then(async (response) => {
         if (!response.ok) throw new Error(await responseError(response));
         return await response.json() as ApiProject;
-      })
-      .then((apiProject) => {
-        const nextProject = mapApiProjectDetail(apiProject, staticProject, currentUser, 0);
+      });
+    void Promise.all([projectRequest, fetchProjectOwners(requestUserId, controller.signal)])
+      .then(([apiProject, owners]) => {
+        const ownerMap = new Map(owners.map((owner) => [owner.id, owner]));
+        const nextProject = mapApiProjectDetail(apiProject, staticProject, currentUser, 0, ownerMap);
         setProject(nextProject);
         setTasks(nextProject.tasks);
         setProjectVisibility(nextProject.visibility);
