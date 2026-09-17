@@ -20,6 +20,7 @@ import {
   Download,
   ExternalLink,
   Settings2,
+  Search,
   Share2,
   Ticket,
   Trash2,
@@ -82,6 +83,23 @@ type ApiProject = {
   createdAt: string;
 };
 
+type ApiTask = {
+  id: string;
+  title: string;
+  status: "todo" | "inprogress" | "done";
+  assigneeId: string | null;
+  dueDate: string | null;
+};
+
+type GoogleSheetDocument = {
+  id: string;
+  name: string;
+  type: "sheet";
+  mimeType: string;
+  modifiedAt: string | null;
+  webUrl: string | null;
+};
+
 const projectResources: ProjectResource[] = [
   { name: "Project brief", type: "Knowledge base", description: "Scope, decisions, and shared context", href: "/knowledge", color: "purple" },
   { name: "Delivery checklist", type: "Google Sheets", description: "Milestones, owners, and launch checks", href: "/integrations", color: "green" },
@@ -105,6 +123,32 @@ function displayStatus(status: ApiProject["status"]): ProjectStatus {
 
 function displayVisibility(visibility: ApiProject["visibility"]): ProjectDetail["visibility"] {
   return visibility === "public" ? "Public" : "Internal";
+}
+
+function displayTaskStatus(status: ApiTask["status"]): ProjectTask["status"] {
+  if (status === "done") return "Done";
+  if (status === "inprogress") return "In progress";
+  return "To do";
+}
+
+function displayTaskDue(dateValue: string | null) {
+  return dateValue ? formatDate(`${dateValue}T00:00:00`, { month: "short", day: "numeric" }) : "No due date";
+}
+
+function nameInitials(name: string) {
+  return name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "UN";
+}
+
+function mapApiTask(task: ApiTask, existingTasks: ProjectTask[], currentUser: { id: string; name: string }): ProjectTask {
+  const existing = existingTasks.find((item) => item.title === task.title);
+  const assignee = existing?.assignee ?? (task.assigneeId === currentUser.id ? currentUser.name : task.assigneeId ?? "Unassigned");
+  return {
+    title: task.title,
+    status: displayTaskStatus(task.status),
+    assignee,
+    initials: existing?.initials ?? nameInitials(assignee),
+    due: displayTaskDue(task.dueDate),
+  };
 }
 
 function formatDate(dateValue: string, options: Intl.DateTimeFormatOptions) {
@@ -350,6 +394,7 @@ export default function ProjectDetailPage() {
   const [syncNotice, setSyncNotice] = useState("");
   const [projectError, setProjectError] = useState("");
   const [isProjectLoading, setIsProjectLoading] = useState(true);
+  const [isGoogleImportOpen, setIsGoogleImportOpen] = useState(false);
   const currentUser = usePortalUser();
   const isMockAuth = process.env.NEXT_PUBLIC_AUTH_MOCK !== "false";
   const requestUserId = isMockAuth ? "demo-user" : currentUser.id;
@@ -431,10 +476,21 @@ export default function ProjectDetailPage() {
     setTasks((current) => current.map((item) => item.title === task.title ? { ...item, status: item.status === "Done" ? "To do" : "Done" } : item));
   }
 
-  function simulateGoogleImport() {
-    const importedTask: ProjectTask = { title: "Add imported Google checklist", status: "To do", assignee: "Sarah Anderson", initials: "SA", due: "Sep 15" };
-    setTasks((current) => current.some((task) => task.title === importedTask.title) ? current : [...current, importedTask]);
-    setSyncNotice("Imported 1 task from Google Sheets · just now");
+  async function refreshProjectTasks() {
+    const response = await fetch(`/api/tasks?projectId=${encodeURIComponent(params.projectId)}`, { cache: "no-store", headers: { Accept: "application/json", "x-user-id": requestUserId } });
+    if (!response.ok) throw new Error(await responseError(response));
+    const payload = await response.json() as { data?: ApiTask[] };
+    if (!Array.isArray(payload.data)) throw new Error("Unable to refresh project tasks");
+    setTasks((current) => payload.data!.map((task) => mapApiTask(task, current, currentUser)));
+  }
+
+  function handleGoogleImportComplete(result: { documentName: string; imported: number }) {
+    const taskLabel = result.imported === 1 ? "task" : "tasks";
+    setSyncNotice(`Imported ${result.imported} ${taskLabel} from ${result.documentName} · just now`);
+    void refreshProjectTasks().catch((error) => {
+      setSyncNotice(`${result.imported} ${taskLabel} imported, but the task list could not refresh. Reload the page to see them.`);
+      console.error("Failed to refresh imported project tasks", error);
+    });
   }
 
   function simulateGoogleExport() {
@@ -458,10 +514,11 @@ export default function ProjectDetailPage() {
       <nav className="detail-tabs" aria-label="Project sections">{["Overview", "Tasks", "Activity"].map((tab) => <button className={activeTab === tab ? "active" : ""} key={tab} type="button" onClick={() => setActiveTab(tab)}>{tab}{tab === "Tasks" && <span>{project.totalTasks}</span>}</button>)}</nav>
       {activeTab === "Overview" && <div className="project-detail-grid"><section className="detail-panel detail-tasks-panel"><div className="detail-panel-heading"><div><span className="eyebrow">Next up</span><h2>Project tasks</h2></div><button className="text-button" type="button" onClick={() => setActiveTab("Tasks")}>View all <ArrowLeft size={13} className="rotate-180" /></button></div><div className="detail-task-list">{tasks.map((task) => <ProjectTaskRow key={task.title} task={task} color={project.color} onEdit={() => openEditTask(task)} onDelete={() => setTaskToDelete(task)} onToggle={() => toggleTaskCompletion(task)} />)}</div></section><aside className="detail-side-stack"><section className="detail-panel"><div className="detail-panel-heading"><div><span className="eyebrow">Timeline</span><h2>Milestones</h2></div><Clock3 size={16} color="#a5adbc" /></div><div className="milestone-list">{project.milestones.map((milestone) => <div className="milestone" key={milestone.label}><span className={`milestone-dot ${milestone.complete ? "complete" : ""}`}>{milestone.complete && <Check size={11} />}</span><span><strong>{milestone.label}</strong><small>{milestone.date}</small></span></div>)}</div></section><section className="detail-panel"><div className="detail-panel-heading"><div><span className="eyebrow">People</span><h2>Project team</h2></div><Users size={16} color="#a5adbc" /></div><div className="detail-team">{project.members.map((member, index) => <span className={`avatar avatar-tiny ${index % 2 === 0 ? project.color : "green"}`} key={`${member}-${index}`}>{member}</span>)}<span className="team-count">{project.members.length} members</span></div><div className="project-date-row"><span>Started</span><strong>{project.startDate}</strong></div></section><section className="detail-panel access-panel"><div className="detail-panel-heading"><div><span className="eyebrow">Sharing</span><h2>Access settings</h2></div><Share2 size={16} color="#a5adbc" /></div><p className="access-description">Choose who can discover and view this project.</p><select className="select-control access-select" value={projectVisibility} onChange={(event) => setProjectVisibility(event.target.value as ProjectDetail["visibility"])} aria-label="Project visibility"><option>Internal</option><option>Public</option></select><div className="share-link-row"><input readOnly value={`https://squad.local/projects/${params.projectId}`} aria-label="Project share link" /><button className="task-menu" type="button" aria-label="Copy project share link" onClick={copyShareLink}>{shareCopied ? <Check size={14} /> : <Copy size={14} />}</button></div><small className="share-note">{shareCopied ? "Share link copied to clipboard." : "Anyone with a public link can view this project."}</small></section></aside></div>}
       {activeTab === "Overview" && <section className="detail-panel project-resources-panel" aria-labelledby="project-resources-title"><div className="detail-panel-heading"><div><span className="eyebrow">Project library</span><h2 id="project-resources-title">Resources</h2></div><BookOpen size={16} color="#a5adbc" /></div><div className="project-resource-list">{project.resources.map((resource) => <Link className="project-resource" href={resource.href} key={resource.name}><span className={`resource-kind-icon ${resource.color}`}><BookOpen size={15} /></span><span><strong>{resource.name}</strong><small>{resource.type} · {resource.description}</small></span><ExternalLink size={14} /></Link>)}</div></section>}
-      {activeTab === "Tasks" && <section className="detail-panel detail-tab-panel"><div className="detail-panel-heading"><div><span className="eyebrow">All work</span><h2>Tasks in {project.name}</h2></div><div className="detail-task-toolbar"><button className="secondary-button" type="button" onClick={simulateGoogleImport}><Upload size={13} /> Import Google</button><button className="secondary-button" type="button" onClick={simulateGoogleExport}><Download size={13} /> Export Google</button><select className="select-control" value={taskFilter} onChange={(event) => setTaskFilter(event.target.value)} aria-label="Filter tasks by status"><option>All tasks</option><option>To do</option><option>In progress</option><option>Done</option></select><button className="primary-button" type="button" onClick={openCreateTask}><Plus size={14} /> Add task</button></div></div>{syncNotice && <p className="sync-notice" role="status">{syncNotice}</p>}<div className="detail-task-list">{visibleTasks.map((task) => <ProjectTaskRow key={task.title} task={task} color={project.color} onEdit={() => openEditTask(task)} onDelete={() => setTaskToDelete(task)} onToggle={() => toggleTaskCompletion(task)} />)}{visibleTasks.length === 0 && <p className="empty-search">No tasks match this status.</p>}</div></section>}
-      {activeTab === "Activity" && <section className="detail-panel detail-tab-panel"><div className="detail-panel-heading"><div><span className="eyebrow">Recent updates</span><h2>Project activity</h2></div></div><div className="detail-activity-list"><div><span className="avatar avatar-tiny purple">NP</span><p><strong>Nadia Putri</strong> moved “Project direction” to complete.<small>Today, 09:42</small></p></div><div><span className="avatar avatar-tiny green">RA</span><p><strong>Raka Aditya</strong> added a review note to the responsive layout.<small>Yesterday, 16:18</small></p></div><div><span className="avatar avatar-tiny orange">SM</span><p><strong>Sinta Maheswari</strong> joined the project team.<small>Aug 25, 11:05</small></p></div></div></section>}
-      {isTaskFormOpen ? <TaskFormModal form={taskForm} editing={editingTaskTitle !== null} onChange={setTaskForm} onClose={closeTaskForm} onSubmit={handleTaskSubmit} /> : null}
-      {taskToDelete ? <DeleteTaskModal task={taskToDelete} onCancel={() => setTaskToDelete(null)} onConfirm={confirmDeleteTask} /> : null}
+       {activeTab === "Tasks" && <section className="detail-panel detail-tab-panel"><div className="detail-panel-heading"><div><span className="eyebrow">All work</span><h2>Tasks in {project.name}</h2></div><div className="detail-task-toolbar"><button className="secondary-button" type="button" onClick={() => setIsGoogleImportOpen(true)}><Upload size={13} /> Import from Sheets</button><button className="secondary-button" type="button" onClick={simulateGoogleExport}><Download size={13} /> Export Google</button><select className="select-control" value={taskFilter} onChange={(event) => setTaskFilter(event.target.value)} aria-label="Filter tasks by status"><option>All tasks</option><option>To do</option><option>In progress</option><option>Done</option></select><button className="primary-button" type="button" onClick={openCreateTask}><Plus size={14} /> Add task</button></div></div>{syncNotice && <p className="sync-notice" role="status">{syncNotice}</p>}<div className="detail-task-list">{visibleTasks.map((task) => <ProjectTaskRow key={task.title} task={task} color={project.color} onEdit={() => openEditTask(task)} onDelete={() => setTaskToDelete(task)} onToggle={() => toggleTaskCompletion(task)} />)}{visibleTasks.length === 0 && <p className="empty-search">No tasks match this status.</p>}</div></section>}
+       {activeTab === "Activity" && <section className="detail-panel detail-tab-panel"><div className="detail-panel-heading"><div><span className="eyebrow">Recent updates</span><h2>Project activity</h2></div></div><div className="detail-activity-list"><div><span className="avatar avatar-tiny purple">NP</span><p><strong>Nadia Putri</strong> moved “Project direction” to complete.<small>Today, 09:42</small></p></div><div><span className="avatar avatar-tiny green">RA</span><p><strong>Raka Aditya</strong> added a review note to the responsive layout.<small>Yesterday, 16:18</small></p></div><div><span className="avatar avatar-tiny orange">SM</span><p><strong>Sinta Maheswari</strong> joined the project team.<small>Aug 25, 11:05</small></p></div></div></section>}
+       {isTaskFormOpen ? <TaskFormModal form={taskForm} editing={editingTaskTitle !== null} onChange={setTaskForm} onClose={closeTaskForm} onSubmit={handleTaskSubmit} /> : null}
+       {taskToDelete ? <DeleteTaskModal task={taskToDelete} onCancel={() => setTaskToDelete(null)} onConfirm={confirmDeleteTask} /> : null}
+       {isGoogleImportOpen ? <GoogleSheetsImportModal projectId={params.projectId} requestUserId={requestUserId} onClose={() => setIsGoogleImportOpen(false)} onImported={handleGoogleImportComplete} /> : null}
     </main>
   </div>;
 }
@@ -472,6 +529,73 @@ function ProjectDetailSkeleton() {
 
 function ProjectNotFoundState({ message }: { message: string }) {
   return <div className="dashboard-shell"><aside className="sidebar"><ProjectBrand /><PortalNavigation /><div className="sidebar-bottom"><PortalSettingsLink /><PortalUserProfile roleLabel="Product lead" /></div></aside><main className="main-content project-detail-page project-not-found"><Link className="back-link" href="/projects"><ArrowLeft size={13} /> Back to projects</Link><h1 className="page-title">Project unavailable</h1><p className="page-subtitle">{message || "This project could not be loaded."}</p></main></div>;
+}
+
+function GoogleSheetsImportModal({ projectId, requestUserId, onClose, onImported }: { projectId: string; requestUserId: string; onClose: () => void; onImported: (result: { documentName: string; imported: number }) => void }) {
+  const [documents, setDocuments] = useState<GoogleSheetDocument[]>([]);
+  const [selectedDocumentId, setSelectedDocumentId] = useState("");
+  const [query, setQuery] = useState("");
+  const [range, setRange] = useState("Tasks!A1:G");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch("/api/settings/integrations/google/documents?type=sheet", { signal: controller.signal, cache: "no-store", headers: { Accept: "application/json", "x-user-id": requestUserId } })
+      .then(async (response) => {
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 409) throw new Error("Connect your Google account with Sheets access before importing.");
+          throw new Error(await responseError(response));
+        }
+        return await response.json() as { data?: GoogleSheetDocument[] };
+      })
+      .then((payload) => {
+        const nextDocuments = Array.isArray(payload.data) ? payload.data : [];
+        setDocuments(nextDocuments);
+        setSelectedDocumentId(nextDocuments[0]?.id ?? "");
+      })
+      .catch((loadError) => {
+        if (loadError instanceof Error && loadError.name === "AbortError") return;
+        setError(loadError instanceof Error ? loadError.message : "Unable to load Google Sheets.");
+      })
+      .finally(() => { if (!controller.signal.aborted) setIsLoading(false); });
+    return () => controller.abort();
+  }, [requestUserId]);
+
+  const visibleDocuments = documents.filter((document) => document.name.toLowerCase().includes(query.trim().toLowerCase()));
+  const selectedDocument = documents.find((document) => document.id === selectedDocumentId) ?? null;
+
+  async function importTasks() {
+    if (!selectedDocument || isImporting) return;
+    const normalizedRange = range.trim();
+    if (!normalizedRange) {
+      setError("Enter the Google Sheets range to import.");
+      return;
+    }
+    setError("");
+    setIsImporting(true);
+    try {
+      const headers = { Accept: "application/json", "Content-Type": "application/json", "x-user-id": requestUserId };
+      const sourceResponse = await fetch(`/api/projects/${encodeURIComponent(projectId)}/google/sources`, { method: "POST", headers, body: JSON.stringify({ documentId: selectedDocument.id, documentName: selectedDocument.name, documentType: "sheet", range: normalizedRange, syncEnabled: true }) });
+      if (!sourceResponse.ok) throw new Error(await responseError(sourceResponse));
+
+      const importResponse = await fetch("/api/settings/integrations/google/documents/import", { method: "POST", headers, body: JSON.stringify({ documentId: selectedDocument.id, projectId, range: normalizedRange }) });
+      if (!importResponse.ok) {
+        if (importResponse.status === 401 || importResponse.status === 409) throw new Error("Connect your Google account with Sheets access before importing.");
+        throw new Error(await responseError(importResponse));
+      }
+      const payload = await importResponse.json() as { data?: { imported?: number } };
+      onImported({ documentName: selectedDocument.name, imported: payload.data?.imported ?? 0 });
+      onClose();
+    } catch (importError) {
+      setError(importError instanceof Error ? importError.message : "Unable to import tasks from Google Sheets.");
+    } finally {
+      setIsImporting(false);
+    }
+  }
+
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !isImporting) onClose(); }}><section className="project-form-modal google-picker-modal google-import-modal" role="dialog" aria-modal="true" aria-labelledby="google-import-title"><div className="modal-heading"><div><span className="eyebrow">Google Sheets</span><h2 id="google-import-title">Import project tasks</h2><p>Choose a connected sheet and sync its task rows into this project.</p></div><button className="modal-close" type="button" aria-label="Close Google Sheets import" onClick={onClose} disabled={isImporting}><X size={17} /></button></div><label className="google-picker-search"><Search size={14} /><span className="sr-only">Search Google Sheets</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search connected Sheets..." /></label><div className="google-picker-list" aria-live="polite">{isLoading ? <p className="google-import-state">Loading connected Google Sheets...</p> : visibleDocuments.map((document) => <button className={`google-picker-item ${selectedDocumentId === document.id ? "selected" : ""}`} type="button" key={document.id} onClick={() => setSelectedDocumentId(document.id)}><span className="resource-kind-icon green"><Upload size={15} /></span><span><strong>{document.name}</strong><small>{document.modifiedAt ? `Updated ${formatDate(document.modifiedAt, { month: "short", day: "numeric", year: "numeric" })}` : "Google Sheet"}</small></span>{selectedDocumentId === document.id ? <Check size={15} /> : null}</button>)}{!isLoading && visibleDocuments.length === 0 ? <p className="google-import-state">{documents.length === 0 ? "No Google Sheets are connected to this account." : "No connected Sheets match your search."}</p> : null}</div>{selectedDocument ? <a className="google-import-document-link" href={selectedDocument.webUrl ?? `https://docs.google.com/spreadsheets/d/${selectedDocument.id}/edit`} target="_blank" rel="noreferrer">Open selected Sheet <ExternalLink size={12} /></a> : null}<label className="google-range-field">Import range<input value={range} onChange={(event) => setRange(event.target.value)} placeholder="Tasks!A1:G" spellCheck={false} /><small>Use the tab name and columns containing Title, Description, Status, Assignee ID, and Due Date.</small></label>{error ? <p className="form-error google-import-error" role="alert">{error}</p> : null}{(error.includes("Connect your Google") || error.includes("Reconnect")) ? <Link className="google-import-settings-link" href="/settings?tab=integrations">Open Google integration settings <ExternalLink size={12} /></Link> : null}<div className="modal-actions"><button className="secondary-button" type="button" onClick={onClose} disabled={isImporting}>Cancel</button><button className="primary-button" type="button" onClick={importTasks} disabled={!selectedDocument || isLoading || isImporting}>{isImporting ? "Importing tasks..." : "Import tasks"}</button></div></section></div>;
 }
 
 function ProjectBrand() {

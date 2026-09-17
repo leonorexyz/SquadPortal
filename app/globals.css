@@ -1659,6 +1659,57 @@ button {
   max-width: 470px;
 }
 
+.google-import-modal {
+  max-height: min(720px, calc(100vh - 44px));
+  overflow-y: auto;
+}
+
+.google-import-state {
+  color: var(--muted);
+  font-size: 10px;
+  margin: 0;
+  padding: 22px 13px;
+  text-align: center;
+}
+
+.google-import-document-link,
+.google-import-settings-link {
+  align-items: center;
+  color: var(--purple-dark);
+  display: inline-flex;
+  font-size: 10px;
+  gap: 5px;
+  margin-top: 11px;
+  text-decoration: none;
+}
+
+.google-import-document-link:hover,
+.google-import-settings-link:hover {
+  color: var(--purple);
+  text-decoration: underline;
+}
+
+.google-range-field {
+  margin-top: 17px;
+}
+
+.google-range-field small {
+  color: var(--soft-muted);
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.google-import-error {
+  margin: 12px 0 0;
+}
+
+.google-import-settings-link {
+  color: var(--orange);
+  font-size: 9px;
+  margin-top: 8px;
+}
+
 .google-picker-search {
   align-items: center;
   border: 1px solid #dddce7;

@@ -48,6 +48,8 @@ export const auth = betterAuth({
           clientId: googleClientId as string,
           clientSecret: googleClientSecret as string,
           prompt: "select_account",
+          // Google login also grants the scopes used by the project task importer.
+          scope: ["https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/spreadsheets"],
         },
       }
     : undefined,
