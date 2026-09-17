@@ -146,7 +146,7 @@ const emptyProjectForm: ProjectFormState = {
 };
 
 export default function ProjectsPage() {
-  const [projectList, setProjectList] = useState(projects);
+  const [projectList, setProjectList] = useState<Project[]>([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("All projects");
   const [projectForm, setProjectForm] = useState<ProjectFormState>(emptyProjectForm);
@@ -258,11 +258,11 @@ export default function ProjectsPage() {
   return <div className="dashboard-shell">
      <aside className="sidebar" aria-label="Main navigation"><ProjectBrand /><PortalNavigation /><div className="sidebar-bottom"><PortalSettingsLink /><PortalUserProfile roleLabel="Product lead" /></div></aside>
      <main className="main-content projects-page"><div className="mobile-header"><ProjectBrand /><PortalUserAvatar className="avatar-header" /></div><header className="main-header"><div><p className="breadcrumb"><strong>Workspace</strong> <span>/</span> Projects</p><h1 className="page-title">Projects</h1><p className="page-subtitle">A shared view of everything the team is moving forward.</p></div><button className="primary-button project-create-button" type="button" onClick={openCreateProject}><Plus size={15} strokeWidth={2} /> New project</button></header>
-      <section className="project-summary-grid" aria-label="Project summary"><div><span className="project-summary-label">All projects</span><strong>{projectList.length.toString().padStart(2, "0")}</strong><small>{isLoading ? "Loading workspace" : "Saved in the workspace"}</small></div><div><span className="project-summary-label">In progress</span><strong>{projectList.filter((project) => !["Preparation", "Go-live", "Support"].includes(project.status)).length.toString().padStart(2, "0")}</strong><small>Across active workstreams</small></div><div><span className="project-summary-label">Completed</span><strong>{projectList.filter((project) => ["Go-live", "Support"].includes(project.status)).length.toString().padStart(2, "0")}</strong><small>Lifecycle complete or supported</small></div><div><span className="project-summary-label">Team capacity</span><strong>78%</strong><small>Healthy this week</small></div></section>
+       {isLoading ? <ProjectSummarySkeleton /> : <section className="project-summary-grid" aria-label="Project summary"><div><span className="project-summary-label">All projects</span><strong>{projectList.length.toString().padStart(2, "0")}</strong><small>Saved in the workspace</small></div><div><span className="project-summary-label">In progress</span><strong>{projectList.filter((project) => !["Preparation", "Go-live", "Support"].includes(project.status)).length.toString().padStart(2, "0")}</strong><small>Across active workstreams</small></div><div><span className="project-summary-label">Completed</span><strong>{projectList.filter((project) => ["Go-live", "Support"].includes(project.status)).length.toString().padStart(2, "0")}</strong><small>Lifecycle complete or supported</small></div><div><span className="project-summary-label">Team capacity</span><strong>78%</strong><small>Healthy this week</small></div></section>}
       {requestError && <p className="field-error" role="alert">{requestError}</p>}
       {saveMessage && <p className="sync-notice" role="status">{saveMessage}</p>}
       <div className="project-toolbar"><div className="search-wrap project-search"><Search size={16} strokeWidth={1.8} aria-hidden="true" /><input className="search-input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search projects..." aria-label="Search projects" /></div><div className="project-filter-actions"><select className="select-control" value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter projects by status"><option>All projects</option><option>Preparation</option><option>Development</option><option>SIT</option><option>UAT</option><option>Go-live</option><option>Support</option><option>Implementation</option></select><button className="secondary-button" type="button"><CalendarDays size={14} /> Sort: Recent <ChevronDown size={13} /></button></div></div>
-      {isLoading ? <p className="empty-search" role="status">Loading projects...</p> : <section className="project-card-grid" aria-label="Project list">{visibleProjects.map((project) => <ProjectCard key={project.id} project={project} onEdit={() => openEditProject(project)} onDelete={() => setProjectToDelete(project)} />)}{visibleProjects.length === 0 && <p className="empty-search">No projects match your filters.</p>}</section>}
+       {isLoading ? <ProjectCardGridSkeleton /> : <section className="project-card-grid" aria-label="Project list">{visibleProjects.map((project) => <ProjectCard key={project.id} project={project} onEdit={() => openEditProject(project)} onDelete={() => setProjectToDelete(project)} />)}{visibleProjects.length === 0 && <p className="empty-search">No projects match your filters.</p>}</section>}
       {isProjectFormOpen ? <ProjectFormModal form={projectForm} editing={editingProjectId !== null} submitting={isSubmitting} onChange={setProjectForm} onClose={closeProjectForm} onSubmit={handleProjectSubmit} /> : null}
       {projectToDelete ? <DeleteProjectModal project={projectToDelete} busy={isSubmitting} onCancel={() => setProjectToDelete(null)} onConfirm={confirmDeleteProject} /> : null}
     </main>
@@ -271,6 +271,14 @@ export default function ProjectsPage() {
 
 function ProjectBrand() {
   return <div className="brand-mark"><span className="brand-icon"><Grid2X2 size={16} strokeWidth={2.2} /></span><span><span className="brand-name">squad<span style={{ color: "#7357f6" }}>.</span></span><span className="brand-caption">team portal</span></span></div>;
+}
+
+function ProjectSummarySkeleton() {
+  return <section className="project-summary-grid loading-summary-skeleton" aria-label="Loading project summary" aria-busy="true">{[1, 2, 3, 4].map((item) => <div key={item}><span className="loading-skeleton skeleton-summary-label" /><span className="loading-skeleton skeleton-summary-value" /><span className="loading-skeleton skeleton-summary-detail" /></div>)}</section>;
+}
+
+function ProjectCardGridSkeleton() {
+  return <section className="project-card-grid loading-card-grid" aria-label="Loading projects" aria-busy="true">{[1, 2, 3, 4, 5, 6].map((item) => <article className="project-card loading-card-skeleton" key={item}><div className="loading-skeleton skeleton-card-status" /><div className="loading-skeleton skeleton-card-menu" /><div className="loading-skeleton skeleton-card-title" /><div className="loading-skeleton skeleton-card-copy" /><div className="loading-skeleton skeleton-card-meta" /><div className="loading-skeleton skeleton-card-divider" /><div className="loading-skeleton skeleton-card-footer" /></article>)}</section>;
 }
 
 function ProjectNavItem({ item, active = false }: { item: (typeof navigation)[number]; active?: boolean }) {

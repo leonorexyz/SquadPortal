@@ -296,17 +296,16 @@ export default function TeamPage() {
         </header>
 
         {loadError ? <p className="field-error" role="alert">{loadError}</p> : null}
-        {isLoading ? <p className="empty-search" role="status">Loading team members...</p> : null}
         {inviteMessage ? <div className="member-feedback" role="status">{inviteMessage}<button type="button" aria-label="Dismiss notification" onClick={() => setInviteMessage("")}><X size={14} /></button></div> : null}
 
-        <section className="member-summary" aria-label="Member summary">
-          <SummaryCard label="Total members" value={memberList.length} detail="Across this workspace" tone="purple" />
-          <SummaryCard label="Active members" value={activeMembers} detail="Can access the workspace" tone="green" />
-          <SummaryCard label="Inactive members" value={inactiveMembers} detail="Access currently paused" tone="orange" />
-          <SummaryCard label="Workspace admins" value={adminCount} detail="Full access and control" tone="blue" />
-        </section>
+        {isLoading ? <MemberSummarySkeleton /> : <section className="member-summary" aria-label="Member summary">
+           <SummaryCard label="Total members" value={memberList.length} detail="Across this workspace" tone="purple" />
+           <SummaryCard label="Active members" value={activeMembers} detail="Can access the workspace" tone="green" />
+           <SummaryCard label="Inactive members" value={inactiveMembers} detail="Access currently paused" tone="orange" />
+           <SummaryCard label="Workspace admins" value={adminCount} detail="Full access and control" tone="blue" />
+        </section>}
 
-        <section className="member-list-panel" aria-labelledby="member-list-title">
+        {isLoading ? <MemberDirectorySkeleton /> : <section className="member-list-panel" aria-labelledby="member-list-title">
           <div className="member-list-heading"><div><span className="eyebrow">Directory</span><h2 id="member-list-title">All members <span>{visibleMembers.length}</span></h2></div><button className="primary-button" type="button" onClick={openInvite} disabled={isLoading || isSaving}><Users size={15} /> Invite member</button></div>
           <div className="member-toolbar">
             <label className="search-wrap"><Search size={15} aria-hidden="true" /><span className="sr-only">Search members</span><input className="search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by name or email..." /></label>
@@ -320,7 +319,7 @@ export default function TeamPage() {
             </table>
             {visibleMembers.length === 0 ? <p className="empty-search">No members match your filters.</p> : null}
           </div>
-        </section>
+        </section>}
       </main>
       {isInviteOpen ? <InviteMemberModal form={inviteForm} error={inviteError} submitting={isSaving} onChange={setInviteForm} onClose={closeInvite} onSubmit={handleInviteSubmit} /> : null}
       {memberForRoleEdit ? <ChangeRoleModal member={memberForRoleEdit} role={roleForm} submitting={isSaving} onRoleChange={setRoleForm} onClose={closeRoleEditor} onSave={saveRole} /> : null}
@@ -331,6 +330,14 @@ export default function TeamPage() {
 
 function TeamBrand() {
   return <div className="brand-mark"><span className="brand-icon"><Grid2X2 size={16} strokeWidth={2.2} /></span><span><span className="brand-name">squad<span style={{ color: "#7357f6" }}>.</span></span><span className="brand-caption">team portal</span></span></div>;
+}
+
+function MemberSummarySkeleton() {
+  return <section className="member-summary loading-summary-skeleton" aria-label="Loading member summary" aria-busy="true">{[1, 2, 3, 4].map((item) => <div className="member-summary-card" key={item}><div className="member-summary-top"><span className="loading-skeleton skeleton-summary-label" /><span className="loading-skeleton skeleton-summary-dot" /></div><span className="loading-skeleton skeleton-member-value" /><span className="loading-skeleton skeleton-summary-detail" /></div>)}</section>;
+}
+
+function MemberDirectorySkeleton() {
+  return <section className="member-list-panel member-directory-skeleton" aria-label="Loading team members" aria-busy="true"><div className="member-list-heading"><div><span className="loading-skeleton skeleton-directory-eyebrow" /><span className="loading-skeleton skeleton-directory-title" /></div><span className="loading-skeleton skeleton-directory-button" /></div><div className="member-toolbar"><span className="loading-skeleton skeleton-directory-search" /><div className="skeleton-directory-filters"><span className="loading-skeleton skeleton-directory-filter" /><span className="loading-skeleton skeleton-directory-filter" /></div></div><div className="member-table-wrap"><div className="member-skeleton-table">{[1, 2, 3, 4, 5].map((item) => <div className="member-skeleton-row" key={item}><span className="loading-skeleton skeleton-member-avatar" /><span className="loading-skeleton skeleton-member-name" /><span className="loading-skeleton skeleton-member-role" /><span className="loading-skeleton skeleton-member-status" /><span className="loading-skeleton skeleton-member-date" /></div>)}</div></div></section>;
 }
 
 function SummaryCard({ label, value, detail, tone }: { label: string; value: number; detail: string; tone: string }) {

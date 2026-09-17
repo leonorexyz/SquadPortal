@@ -174,8 +174,8 @@ export default function DashboardPage() {
   const currentUser = usePortalUser();
   const [query, setQuery] = useState("");
   const [period, setPeriod] = useState("This week");
-  const [dashboardData, setDashboardData] = useState<DashboardData>(mockDashboardData);
-  const [dataSource, setDataSource] = useState<DataSource>("demo");
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [dataSource, setDataSource] = useState<DataSource>("loading");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   function navigateToPage(label: string) {
@@ -249,7 +249,7 @@ export default function DashboardPage() {
         </header>
 
         <div className="dashboard-toolbar">
-          <QuickSearch resources={dashboardData.searchableResources} query={query} onQueryChange={setQuery} onSelectResource={navigateToPage} />
+          <QuickSearch resources={dashboardData?.searchableResources ?? []} query={query} onQueryChange={setQuery} onSelectResource={navigateToPage} />
           <div className="toolbar-actions">
             <select className="select-control" value={period} onChange={(event) => setPeriod(event.target.value)} aria-label="Select dashboard period">
               <option>This week</option>
@@ -261,12 +261,12 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <SummaryCards cards={dashboardData.summaryCards} />
+        {dashboardData ? <SummaryCards cards={dashboardData.summaryCards} /> : <DashboardSummarySkeleton />}
 
         <div className="dashboard-grid first-row">
           <section className="panel" aria-labelledby="productivity-heading">
             <PanelHeading id="productivity-heading" title="Team productivity" description={`Activity distribution · ${period.toLowerCase()}`} action="View details" />
-            <ProductivityPieChart members={dashboardData.productivity} period={period} />
+            {dashboardData ? <ProductivityPieChart members={dashboardData.productivity} period={period} /> : <DashboardChartSkeleton />}
           </section>
 
           <section className="panel quick-actions-panel" aria-labelledby="quick-actions-heading">
@@ -278,7 +278,7 @@ export default function DashboardPage() {
         <div className="dashboard-grid second-row">
           <section className="panel" aria-labelledby="projects-heading">
             <PanelHeading id="projects-heading" title="Project health" description="Progress across active projects" action="All projects" />
-            <div className="project-list">
+            {dashboardData ? <><div className="project-list">
               {dashboardData.projects.map((project) => <div key={project.name}>
                 <div className="project-row">
                   <div className="project-row-top"><span className="project-name">{project.name}</span><span className={`project-status ${project.statusClass}`}>{project.status}</span></div>
@@ -287,18 +287,18 @@ export default function DashboardPage() {
                 </div>
               </div>)}
             </div>
-            <div className="project-footer"><span>8 active projects</span><button className="text-button" type="button" onClick={() => navigateToPage("Projects")}>Manage projects <ArrowUpRight size={12} /></button></div>
+            <div className="project-footer"><span>{dashboardData.summaryCards.find((card) => card.label === "Active projects")?.value ?? "—"} active projects</span><button className="text-button" type="button" onClick={() => navigateToPage("Projects")}>Manage projects <ArrowUpRight size={12} /></button></div></> : <DashboardProjectSkeleton />}
           </section>
 
           <section className="panel" aria-labelledby="activity-heading">
             <PanelHeading id="activity-heading" title="Recent activity" description="The latest updates from your team" action="View all" />
-            <ActivityList activities={dashboardData.activities} />
+            {dashboardData ? <ActivityList activities={dashboardData.activities} /> : <DashboardActivitySkeleton />}
           </section>
         </div>
 
         <section className="panel focus-panel" aria-labelledby="focus-heading">
           <PanelHeading id="focus-heading" title="Your focus" description="A quick view of the tasks that need your attention" action="View all tasks" />
-          <div className="focus-table">
+          {dashboardData ? <div className="focus-table">
             <div className="focus-table-header"><span>Task</span><span>Project</span><span>Due date</span><span /></div>
             {dashboardData.focusTasks.map((task) => <div className="focus-task-row" key={task.title}>
               <div className="task-main"><input className="task-checkbox" type="checkbox" aria-label={`Mark ${task.title} complete`} /><span className="task-title">{task.title}</span></div>
@@ -306,9 +306,29 @@ export default function DashboardPage() {
               <span className={`due-date ${task.soon ? "soon" : ""}`}>{task.due}</span>
               <button className="task-menu" type="button" aria-label={`More options for ${task.title}`}><MoreHorizontal size={16} /></button>
             </div>)}
-          </div>
+          </div> : <DashboardFocusSkeleton />}
         </section>
   </DashboardShell>;
+}
+
+function DashboardSummarySkeleton() {
+  return <section className="stats-grid loading-summary-skeleton" aria-label="Loading team summary" aria-busy="true">{[1, 2, 3, 4].map((item) => <article className="stat-card" key={item}><div className="stat-card-top"><span className="loading-skeleton skeleton-summary-label" /><span className="loading-skeleton skeleton-dashboard-icon" /></div><span className="loading-skeleton skeleton-dashboard-value" /><div className="stat-foot"><span className="loading-skeleton skeleton-dashboard-dot" /><span className="loading-skeleton skeleton-dashboard-trend" /><span className="loading-skeleton skeleton-dashboard-detail" /></div></article>)}</section>;
+}
+
+function DashboardChartSkeleton() {
+  return <div className="dashboard-data-skeleton dashboard-chart-skeleton" aria-label="Loading team productivity" aria-busy="true"><span className="loading-skeleton skeleton-chart-ring" /><div><span className="loading-skeleton skeleton-chart-legend" /><span className="loading-skeleton skeleton-chart-legend short" /><span className="loading-skeleton skeleton-chart-legend medium" /></div></div>;
+}
+
+function DashboardProjectSkeleton() {
+  return <div className="dashboard-data-skeleton dashboard-project-skeleton" aria-label="Loading project health" aria-busy="true">{[1, 2, 3].map((item) => <div className="dashboard-skeleton-project-row" key={item}><div className="dashboard-skeleton-project-top"><span className="loading-skeleton skeleton-project-name" /><span className="loading-skeleton skeleton-project-status" /></div><span className="loading-skeleton skeleton-project-progress" /></div>)}</div>;
+}
+
+function DashboardActivitySkeleton() {
+  return <div className="dashboard-data-skeleton dashboard-activity-skeleton" aria-label="Loading recent activity" aria-busy="true">{[1, 2, 3, 4].map((item) => <div className="dashboard-skeleton-activity-row" key={item}><span className="loading-skeleton skeleton-activity-avatar" /><span><span className="loading-skeleton skeleton-activity-line" /><span className="loading-skeleton skeleton-activity-line short" /></span></div>)}</div>;
+}
+
+function DashboardFocusSkeleton() {
+  return <div className="focus-table dashboard-focus-skeleton" aria-label="Loading focus tasks" aria-busy="true"><div className="focus-table-header"><span>Task</span><span>Project</span><span>Due date</span><span /></div>{[1, 2, 3, 4].map((item) => <div className="focus-task-row" key={item}><span className="loading-skeleton skeleton-focus-check" /><span className="loading-skeleton skeleton-focus-title" /><span className="loading-skeleton skeleton-focus-project" /><span className="loading-skeleton skeleton-focus-date" /></div>)}</div>;
 }
 
 function Brand() {

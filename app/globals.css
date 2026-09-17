@@ -6454,6 +6454,349 @@ body :is(.tasks-summary > div, .member-toolbar, .role-member-preview, .access-ov
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
 }
 
+.loading-summary-skeleton,
+.loading-card-grid,
+.dashboard-data-skeleton,
+.member-directory-skeleton {
+  animation: skeleton-fade-in 180ms ease-out;
+}
+
+.loading-summary-skeleton > *,
+.loading-card-grid > * {
+  pointer-events: none;
+}
+
+.skeleton-summary-label {
+  height: 9px;
+  width: 82px;
+}
+
+.skeleton-summary-value {
+  height: 24px;
+  margin-top: 12px;
+  width: 46px;
+}
+
+.skeleton-summary-detail {
+  height: 8px;
+  margin-top: 8px;
+  width: 112px;
+}
+
+.skeleton-summary-dot {
+  border-radius: 50%;
+  height: 8px;
+  width: 8px;
+}
+
+.skeleton-member-value {
+  height: 29px;
+  margin-top: 19px;
+  width: 48px;
+}
+
+.skeleton-dashboard-icon {
+  border-radius: 8px;
+  height: 29px;
+  width: 29px;
+}
+
+.skeleton-dashboard-value {
+  height: 25px;
+  margin-top: 16px;
+  width: 48px;
+}
+
+.skeleton-dashboard-dot {
+  border-radius: 50%;
+  height: 5px;
+  width: 5px;
+}
+
+.skeleton-dashboard-trend {
+  height: 8px;
+  width: 30px;
+}
+
+.skeleton-dashboard-detail {
+  height: 8px;
+  width: 84px;
+}
+
+.loading-card-skeleton {
+  min-height: 267px;
+  position: relative;
+}
+
+.skeleton-card-status {
+  height: 20px;
+  width: 70px;
+}
+
+.skeleton-card-menu {
+  height: 10px;
+  position: absolute;
+  right: 18px;
+  top: 20px;
+  width: 31px;
+}
+
+.skeleton-card-title {
+  height: 17px;
+  margin-top: 23px;
+  width: 62%;
+}
+
+.skeleton-card-copy {
+  height: 9px;
+  margin-top: 12px;
+  width: 88%;
+}
+
+.skeleton-card-meta {
+  height: 20px;
+  margin-top: 31px;
+  width: 46%;
+}
+
+.skeleton-card-divider {
+  height: 1px;
+  margin-top: 17px;
+  width: 100%;
+}
+
+.skeleton-card-footer {
+  height: 8px;
+  margin-top: 16px;
+  width: 76%;
+}
+
+.skeleton-card-accent {
+  border-radius: 0;
+  height: 3px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.dashboard-chart-skeleton {
+  align-items: center;
+  display: grid;
+  gap: 30px;
+  grid-template-columns: 164px 1fr;
+  margin-top: 17px;
+  min-height: 164px;
+}
+
+.skeleton-chart-ring {
+  border-radius: 50%;
+  height: 164px;
+  width: 164px;
+}
+
+.dashboard-chart-skeleton > div {
+  display: grid;
+  gap: 13px;
+}
+
+.skeleton-chart-legend {
+  height: 9px;
+  width: 130px;
+}
+
+.skeleton-chart-legend.short {
+  width: 96px;
+}
+
+.skeleton-chart-legend.medium {
+  width: 112px;
+}
+
+.dashboard-project-skeleton,
+.dashboard-activity-skeleton {
+  display: grid;
+  gap: 15px;
+  margin-top: 18px;
+}
+
+.dashboard-skeleton-project-row {
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-skeleton-project-top {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.skeleton-project-name {
+  height: 10px;
+  width: 42%;
+}
+
+.skeleton-project-status {
+  height: 18px;
+  width: 54px;
+}
+
+.skeleton-project-progress {
+  height: 6px;
+  width: 100%;
+}
+
+.dashboard-skeleton-activity-row {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 30px 1fr;
+}
+
+.skeleton-activity-avatar {
+  border-radius: 50%;
+  height: 30px;
+  width: 30px;
+}
+
+.dashboard-skeleton-activity-row > span:last-child {
+  display: grid;
+  gap: 7px;
+}
+
+.skeleton-activity-line {
+  height: 9px;
+  width: 88%;
+}
+
+.skeleton-activity-line.short {
+  width: 54%;
+}
+
+.dashboard-focus-skeleton {
+  animation: skeleton-fade-in 180ms ease-out;
+}
+
+.skeleton-focus-check {
+  border-radius: 5px;
+  height: 16px;
+  width: 16px;
+}
+
+.skeleton-focus-title {
+  height: 10px;
+  width: 72%;
+}
+
+.skeleton-focus-project {
+  height: 9px;
+  width: 82px;
+}
+
+.skeleton-focus-date {
+  height: 9px;
+  width: 54px;
+}
+
+.skeleton-directory-eyebrow {
+  height: 9px;
+  width: 76px;
+}
+
+.skeleton-directory-title {
+  height: 19px;
+  margin-top: 7px;
+  width: 116px;
+}
+
+.skeleton-directory-button {
+  height: 38px;
+  width: 112px;
+}
+
+.skeleton-directory-search {
+  height: 38px;
+  width: min(340px, 48%);
+}
+
+.skeleton-directory-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.skeleton-directory-filter {
+  height: 38px;
+  width: 120px;
+}
+
+.member-skeleton-table {
+  display: grid;
+}
+
+.member-skeleton-row {
+  align-items: center;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 30px minmax(160px, 1fr) 80px 90px 90px;
+  min-height: 69px;
+  padding: 14px 23px;
+}
+
+.skeleton-member-avatar {
+  border-radius: 50%;
+  height: 30px;
+  width: 30px;
+}
+
+.skeleton-member-name {
+  height: 10px;
+  width: 68%;
+}
+
+.skeleton-member-role,
+.skeleton-member-status,
+.skeleton-member-date {
+  height: 9px;
+  width: 70px;
+}
+
+@media (max-width: 900px) {
+  .dashboard-chart-skeleton {
+    grid-template-columns: 140px 1fr;
+  }
+
+  .skeleton-chart-ring {
+    height: 140px;
+    width: 140px;
+  }
+}
+
+@media (max-width: 620px) {
+  .dashboard-chart-skeleton {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .dashboard-chart-skeleton > div {
+    justify-self: stretch;
+  }
+
+  .skeleton-directory-search {
+    width: 100%;
+  }
+
+  .member-skeleton-row {
+    grid-template-columns: 30px minmax(130px, 1fr) 70px;
+  }
+
+  .skeleton-member-role,
+  .skeleton-member-status,
+  .skeleton-member-date {
+    display: none;
+  }
+}
+
 .skeleton-breadcrumb {
   height: 10px;
   width: 116px;
